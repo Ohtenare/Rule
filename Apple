@@ -1,9 +1,7 @@
 user-agent, App%20Store*, Apple
-user-agent, MacAppStore*, DIRECT
 host, ocsp.apple.com, Apple
 host, apps.apple.com, Apple
 host-suffix, ampproject.org, Apple
-host, reserve-prime.apple.com, DIRECT
 host-suffix, aaplimg.com, Apple
 host-suffix, apple.co, Apple
 host-suffix, apple.com, Apple
