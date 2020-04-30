@@ -1,15 +1,15 @@
-user-agent, App%20Store*, 
+user-agent, App%20Store*, Apple
 user-agent, MacAppStore*, DIRECT
-host, ocsp.apple.com, 
-host, apps.apple.com, 
-host-suffix, ampproject.org, 
+host, ocsp.apple.com, Apple
+host, apps.apple.com, Apple
+host-suffix, ampproject.org, Apple
 host, reserve-prime.apple.com, DIRECT
-host-suffix, aaplimg.com, 
-host-suffix, apple.co, 
-host-suffix, apple.com, 
-host-suffix, cdn-apple.com, 
-host-suffix, icloud-content.com, 
-host-suffix, icloud.com, 
-host-suffix, itunes.com, 
-host-suffix, me.com, 
-host-suffix, mzstatic.com, 
+host-suffix, aaplimg.com, Apple
+host-suffix, apple.co, Apple
+host-suffix, apple.com, Apple
+host-suffix, cdn-apple.com, Apple
+host-suffix, icloud-content.com, Apple
+host-suffix, icloud.com, Apple
+host-suffix, itunes.com, Apple
+host-suffix, me.com, Apple
+host-suffix, mzstatic.com, Apple 
