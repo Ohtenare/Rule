@@ -1,38 +1,7 @@
-# > Beplay
-host-keyword, beplay, DIRECT
-# > Blizzard
-user-agent, hearthstone*, DIRECT
-host,cdp.cloud.unity3d.com
-host-suffix,battle.net
-host-suffix,battlenet.com
-host-suffix,blizzard.com
-# > Prior
-host,client.amplifi.com
-host,ip.bjango.com
-host-suffix,alphassl.com
-host-suffix,edu.cn
-# > Sony
-user-agent, RemotePlay*, DIRECT
-# > TeamViewer
-IP-CIDR,185.188.32.0/24,no-resolve
-IP-CIDR,185.188.33.0/24,no-resolve
-IP-CIDR,185.188.34.0/24,no-resolve
-IP-CIDR,185.188.35.0/24,no-resolve
-IP-CIDR6,2a0b:b580::/48,no-resolve
-IP-CIDR6,2a0b:b581::/48,no-resolve
-IP-CIDR6,2a0b:b582::/48,no-resolve
-IP-CIDR6,2a0b:b583::/48,no-resolve
-# > Tencent
-IP-CIDR,182.254.116.0/24,no-resolve
-host-suffix,12306.cn
-host-suffix,12306.com
-
-host-suffix,126.net
-
+,no-resolve
+t
 host-suffix,163.com
-
 host-suffix,360.cn
-
 host-suffix,360.com
 
 host-suffix,360buy.com
@@ -117,47 +86,6 @@ host-suffix,chunbo.com
 
 host-suffix,chunboimg.com
 
-host-suffix,clashroyaleapp.com
-
-host-suffix,clouddn.com
-
-host-suffix,cloudsigma.com
-
-host-suffix,cloudxns.net
-
-host-suffix,cmct.tv
-
-host-suffix,cmfu.com
-
-host-suffix,cnbeta.com
-
-host-suffix,cnbetacdn.com
-
-host-suffix,chdbits.co
-
-host-suffix,cnlang.org
-
-host-suffix,culturedcode.com
-
-host-suffix,dct-cloud.com
-
-host-suffix,didialift.com
-
-host-suffix,digicert.com
-
-host-suffix,douban.com
-
-host-suffix,doubanio.com
-
-host-suffix,douyin.com
-
-host-suffix,douyu.com
-
-host-suffix,douyu.tv
-
-host-suffix,douyutv.com
-
-host-suffix,duokan.com
 
 host-suffix,duoshuo.com
 
