@@ -4,7 +4,7 @@ host-keyword, beplay, DIRECT
 
 # > Blizzard
 
-user-agent,hearthstone*
+user-agent,hearthstone*, DIRECT
 
 host,cdp.cloud.unity3d.com
 
@@ -26,7 +26,7 @@ host-suffix,edu.cn
 
 # > Sony
 
-user-agent,RemotePlay*
+user-agent,RemotePlay*, DIRECT
 
 # > TeamViewer
 
