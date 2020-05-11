@@ -4,9 +4,9 @@ host-keyword, beplay, DIRECT
 
 # > Blizzard
 
-user-agent,hearthstone*, DIRECT
+user-agent, hearthstone*, DIRECT
 
-host, cdp.cloud.unity3d.com
+host, cdp.cloud.unity3d.com, DIRECT
 
 host-suffix, battle.net
 
@@ -16,9 +16,9 @@ host-suffix, blizzard.com
 
 # > Prior
 
-host, client.amplifi.com
+host, client.amplifi.com, DIRECT
 
-host, ip.bjango.com
+host, ip.bjango.com, DIRECT
 
 host-suffix, alphassl.com
 
