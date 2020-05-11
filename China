@@ -30,25 +30,25 @@ user-agent,RemotePlay*, DIRECT
 
 # > TeamViewer
 
-ip-cidr,  185.188.32.0/24,no-resolve
+ip-cidr,  185.188.32.0/24, DIRECT,no-resolve
 
-ip-cidr,  185.188.33.0/24,no-resolve
+ip-cidr,  185.188.33.0/24, DIRECT,no-resolve
 
-ip-cidr,  185.188.34.0/24,no-resolve
+ip-cidr,  185.188.34.0/24, DIRECT,no-resolve
 
-ip-cidr,  185.188.35.0/24,no-resolve
+ip-cidr,  185.188.35.0/24, DIRECT,no-resolve
 
-ip-cidr6,  2a0b:b580::/48,no-resolve
+ip-cidr6,  2a0b:b580::/48, DIRECT,no-resolve
 
-ip-cidr6,  2a0b:b581::/48,no-resolve
+ip-cidr6,  2a0b:b581::/48, DIRECT,no-resolve
 
-ip-cidr6,  2a0b:b582::/48,no-resolve
+ip-cidr6,  2a0b:b582::/48, DIRECT,no-resolve
 
-ip-cidr6,  2a0b:b583::/48,no-resolve
+ip-cidr6,  2a0b:b583::/48, DIRECT,no-resolve
 
 # > Tencent
 
-ip-cidr,  182.254.116.0/24,no-resolve
+ip-cidr,  182.254.116.0/24, DIRECT,no-resolve
 
 host-suffix, 12306.cn
 
@@ -534,8 +534,8 @@ host-suffix, zimuzu.tv
 
 host-suffix, zmz002.com
 
-ip-cidr,  1.255.62.0/24,no-resolve
+ip-cidr,  1.255.62.0/24, DIRECT,no-resolve
 
 # > CN
 
-host-suffix, cn
+host-suffix, cn, DIRECT
