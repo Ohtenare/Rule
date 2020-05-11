@@ -1,12 +1,12 @@
 # > Beplay
 
-host-keyword, beplay, DIRECT
+host-keyword, beplay, direct
 
 # > Blizzard
 
 user-agent, hearthstone*, DIRECT
 
-host, cdp.cloud.unity3d.com, DIRECT
+host, cdp.cloud.unity3d.com, direct
 
 host-suffix, battle.net
 
