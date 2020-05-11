@@ -4,7 +4,7 @@ host-keyword, beplay, DIRECT
 
 # > Blizzard
 
-user-agent,hearthstone*, DIRECT
+user-agent, hearthstone*, DIRECT
 
 host,cdp.cloud.unity3d.com
 
