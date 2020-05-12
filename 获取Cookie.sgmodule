@@ -1,0 +1,127 @@
+#!name=Cookies获取
+
+#!desc=该模块为Cookie获取合集
+
+#!system=ios
+
+[MITM]
+
+hostname = %INSERT% api.1sapp.com,apiwz.midukanshu.com,*.video.qq.com,passport.suning.com, luckman.suning.com, sign.suning.com, gameapi.suning.com,xiaoshuo.qm989.com,wapside.189.cn:9001,act.10010.com, m.client.10010.com,daojia.jd.com,*.rr.tv*.rrys2019.com, ios.zmzapi.com,www.52pojie.cn,api.weibo.cn, pay.sc.weibo.com,api.inews.qq.com,draw.jdfcloud.com
+
+[Script]
+
+# 趣头条
+
+http-request ^https:\/\/api\.1sapp\.com\/sign\/info? script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/qtt/qtt.cookie.js
+
+http-request ^https:\/\/api\.1sapp\.com\/content\/readV2? script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/qtt/qtt.cookie.js
+
+http-request ^https:\/\/api\.1sapp\.com\/x\/feed\/getReward? script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/qtt/qtt.cookie.js,api.m.jd.com,*.iqiyi.com
+
+# 米读
+
+http-request ^https:\/\/apiwz\.midukanshu\.com script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/midu/midu.cookie.js, requires-body=true
+
+# 腾讯视频
+
+# 1.手机浏览器访问并登录: https://film.qq.com/
+
+http-request ^https:\/\/access.video.qq.com\/user\/auth_refresh script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/videoqq/videoqq.cookie.js
+
+# 苏宁易购
+
+# 首页 > 签到有礼
+
+# 首页 > 领取红包
+
+# 首页  > 天天低价
+
+# 注意有4条获取 Cookie 脚本
+
+http-request ^https:\/\/passport.suning.com\/ids\/login$ script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/suning/suning.cookie.js, requires-body=true
+
+http-request ^https:\/\/luckman.suning.com\/luck-web\/sign\/api\/clock_sign.do script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/suning/suning.cookie.js
+
+http-request ^https:\/\/sign.suning.com\/sign-web\/m\/promotion\/sign\/doSign.do script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/suning/suning.cookie.js
+
+http-request ^https:\/\/gameapi.suning.com\/sngame-web\/(api\/signin\/private\/customerSignOperation.do|gateway\/api\/queryPrize.do) script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/suning/suning.cookie.js
+
+# 七猫小说
+
+# APP内手动日常签到(观看小视频领取奖励)和新手领福利签到以及幸运大转盘 1 次
+
+http-request ^https:\/\/xiaoshuo\.qm989\.com script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/qimao/qmnovel.js
+
+# 电信营业厅
+
+http-request ^https:\/\/wapside.189.cn:9001\/api\/home\/sign script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10000/10000.cookie.js, requires-body=true
+
+# 联通营业厅
+
+# 1打开 APP , 进入签到页面, 系统提示: `获取刷新链接: 成功`,然后手动签到 1 次
+
+# 2首页>天天抽奖, 系统提示 `2` 次: `获取Cookie: 成功 (登录抽奖)` 和 `获取Cookie: 成功 (抽奖次数)`
+
+http-request ^https:\/\/act.10010.com\/SigninApp\/signin\/querySigninActivity.htm script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.cookie.js
+
+http-request ^https:\/\/act.10010.com\/SigninApp(.*?)\/signin\/daySign script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.cookie.js
+
+http-request ^https:\/\/m.client.10010.com\/dailylottery\/static\/(textdl\/userLogin|active\/findActivityInfo) script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/10010/10010.cookie.js
+
+# > 京东到家 (@barrymchen, @GideonSenku & @Macsuny)
+
+# APP登陆账号后，点击主页’签到‘,即可
+
+http-request ^https:\/\/daojia.jd.com/client(.*?)functionId=signin(.*?)userSigninNew script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/jddj/jddj.cookie.js
+
+#人人视频
+
+# 打开 APP, 访问下`个人中心`
+
+http-request ^https:\/\/api\.rr\.tv\/user\/profile script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/rrtv/rrtv.cookie.js
+
+# 字幕组
+
+# 网页:打开浏览器访问: http://www.rrys2019.com, App: 打开 APP 即可
+
+http-request ^https?:\/\/(www\.)?rrys2019\.com\/?.? script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/zimuzu/zimuzu.cookie.js
+
+http-request ^http:\/\/ios.zmzapi.com\/index.php.*a=(mobile_)?login script-path=https://raw.githubusercontent.com/chavyleung/scripts/master/zimuzu/zimuzu.cookie.js
+
+# > 京东
+
+# 获取京东Cookie.
+
+http-request https:\/\/api\.m\.jd\.com\/client\.action.*functionId=signBean max-size=0,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js
+
+# iQIYI Daily bonus script
+
+# Get Cookie
+
+爱奇艺获取Cookie = type=http-request,pattern=https?:\/\/.*\.iqiyi\.com\/.*authcookie=,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/iQIYI-DailyBonus/iQIYI.js
+
+# > 吾爱破解
+
+吾爱获取Cookie = type=http-request,pattern=https:\/\/www\.52pojie\.cn\/home\.php\?,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/52pojie-DailyBonus/52pojie.js
+
+# 获取微博 Cookie.
+
+weibo.js = type=http-request,pattern=https:\/\/api\.weibo\.cn\/\d\/video\/machine\?gsid,script-path=https://raw.githubusercontent.com/Sunert/Scripts/master/Task/weibo.js
+
+# 微博钱包签到Cookie
+
+weibo.js = type=http-request,pattern=https:\/\/pay\.sc\.weibo\.com\/aj\/mobile\/home\/welfare\/signin\/do\?,script-path=https://raw.githubusercontent.com/Sunert/Scripts/master/Task/weibo.js
+
+# 腾讯新闻
+
+腾讯新闻 = type=http-request,pattern=https:\/\/api\.inews\.qq\.com\/event\/v1\/user\/event\/report\?,script-path=https://raw.githubusercontent.com/Sunert/Scripts/master/Task/txnews2.js
+
+腾讯新闻 = type=http-request,pattern=^https:\/\/api\.inews\.qq\.com\/activity\/v1\/redpack\/user\/list\?activity_id,script-path=https://raw.githubusercontent.com/Sunert/Scripts/master/Task/txnews2.js
+
+# > 微信小程序-来客有礼 (By @Macsuny)
+
+# 微信搜索’来客有礼‘小程序,登陆京东账号，点击’领京豆->翻牌‘
+
+# 来客有礼 Cookie.
+
+lkyl.js = type=http-request,pattern=https:\/\/draw\.jdfcloud\.com\/\/api\/bean\/square\/silverBean\/task\/get\?,script-path=https://raw.githubusercontent.com/Sunert/Scripts/master/Task/lkyl.js
