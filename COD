@@ -4,3 +4,4 @@ DOMAIN-SUFFIX,activision.com
 DOMAIN-SUFFIX,itosdk.com
 USER-AGENT,Call%20of%20Duty*
 DOMAIN,activision.itopsdk.com
+IP-CIDR,150.109.192.0/21,no-resolve
