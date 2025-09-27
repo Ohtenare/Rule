@@ -1,0 +1,16 @@
+scriptings:
+- http_request:
+    name: 途虎养车#
+    match: https:\/\/api\.tuhu\.cn\/User\/GetInternalCenterInfo
+    script_url: https://raw.githubusercontent.com/Sliverkiss/GoodNight/master/Script/tuhu.js
+    body_required: false
+- schedule:
+    name: 途虎养车
+    cron: 17 7 * * *
+    script_url: https://raw.githubusercontent.com/Sliverkiss/GoodNight/master/Script/tuhu.js
+    update_interval: 0
+    timeout: 60
+mitm:
+  hostnames:
+    includes:
+    - api.tuhu.cn
