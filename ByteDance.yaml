@@ -1,7 +1,7 @@
 name: 字节系净化
 description: 整合拦截字节跳动系广告（蛋花小说/番茄小说/今日头条/抖音内嵌），重点移除阅读场景广告与埋点，兼容短剧播放。
 compat_arguments:
-  激励视频: REJECT-DROP
+  激励视频: REJECT
 author: ByteValley
 icon: https://gitlab.com/lodepuly/iconlibrary/-/raw/main/App_icon/120px/DragonRead.png
 rules:
