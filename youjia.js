@@ -10,17 +10,15 @@
  * - 实时显示 92/95/98 号汽油和柴油价格
  * - 深色模式自动适配
  * - 全 iPhone 机型适配
- * 
+ *
  * 📚 使用教程
  * ═══════════════════════════════════════════════════
- *
  * 1️⃣ 环境变量配置
  * ─────────────────────────────────────────────────
  * 在 Egern 小组件配置中添加：
  *
  * 名称：region
  * 值：省份/城市（拼音，用 / 分隔）
- *
  * 名称：SHOW_TREND
  * 值：true（显示调价趋势）或 false（不显示）
  *
@@ -30,33 +28,9 @@
  * • 北京：beijing  • 上海：shanghai
  * • 天津：tianjin  • 重庆：chongqing
  * 【省份 - 省会城市】
- * • 广东：guangdong/guangzhou
- * • 江苏：jiangsu/nanjing
- * • 浙江：zhejiang/hangzhou
- * • 山东：shandong/jinan
- * • 河南：henan/zhengzhou
- * • 河北：hebei/shijiazhuang
- * • 四川：sichuan/chengdu
- * • 湖北：hubei/wuhan
- * • 湖南：hunan/changsha
- * • 安徽：anhui/hefei
- * • 福建：fujian/fuzhou
- * • 江西：jiangxi/nanchang
- * • 辽宁：liaoning/shenyang
  * • 陕西：shanxi-3/xian  ⚠️
  * • 海南：hainan/haikou
  * • 山西：shanxi-1/taiyuan  ⚠️
- * • 吉林：jilin/changchun
- * • 黑龙江：heilongjiang/haerbin
- * • 云南：yunnan/kunming
- * • 贵州：guizhou/guiyang
- * • 广西：guangxi/nanning
- * • 甘肃：gansu/lanzhou
- * • 青海：qinghai/xining
- * • 宁夏：ningxia/yinchuan
- * • 新疆：xinjiang/wulumuqi
- * • 西藏：xizang/lasa
- * • 内蒙古：neimenggu/huhehaote
  * • 也可以去 http://m.qiyoujiage.com/shanxi-3.shtml 查看自己省份拼音
  * ═══════════════════════════════════════════════════
  */
