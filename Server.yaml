@@ -4,7 +4,7 @@ description: "服务器状态监控仪表盘配置面板"
 env_schema:
   MASK_IP:
     name: 节点IP打码
-    description: IP 打码开关 (可选，true/false，默认: true)
+    description: IP打码true/false 默认true
     default_value: "true"
   WIDGET_NAME:
     name: 节点名称
