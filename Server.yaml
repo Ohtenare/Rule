@@ -50,7 +50,7 @@ env_schema:
 scriptings:
 - generic:
     name: Server Monitor 探针
-    script_url: https://raw.githubusercontent.com/xcgtb/Egern-Widgets/main/Probe.js?v=333
+    script_url: https://raw.githubusercontent.com/Ohtenare/Rule/refs/heads/master/Server.js?v=333
 
 widgets:
 - name: Server Monitor 探针
