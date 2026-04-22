@@ -34,20 +34,18 @@ export default async function (ctx) {
     username: env.SERVER_USER || 'root',
     password: env.SERVER_PASSWORD || '',
     privateKey: env.SERVER_KEY || '', 
-    maskIp: env.MASK_IP !== undefined ? String(env.MASK_IP) === 'true' : true, // 默认开启打码
+    maskIp: env.MASK_IP !== undefined ? String(env.MASK_IP) === 'true' : true,
     bwhVeid: env.BWH_VEID || '',
     bwhApiKey: env.BWH_API_KEY || '',
     trafficLimitGB: Number(env.TRAFFIC_LIMIT) || 2000,
     resetDay: Number(env.RESET_DAY) || 1
   };
 
-  // 🎨 统一 UI 规范颜色
   const C = {
     bg: { light: '#FFFFFF', dark: '#121212' },       
     barBg: { light: '#0000001A', dark: '#FFFFFF22' },
     text: { light: '#1C1C1E', dark: '#FFFFFF' },     
     dim: { light: '#8E8E93', dark: '#8E8E93' },      
-    
     cpu: { light: '#007AFF', dark: '#0A84FF' },      
     mem: { light: '#AF52DE', dark: '#BF5AF2' },      
     disk: { light: '#FF9500', dark: '#FF9F0A' },     
@@ -55,13 +53,12 @@ export default async function (ctx) {
     netTx: { light: '#5856D6', dark: '#5E5CE6' },    
   };
 
-  // 🔒 IP 打码辅助函数
   const maskIP = (ip) => {
     if (!ip || !SERVER_CONFIG.maskIp) return ip;
-    if (ip.includes('.')) { // IPv4
+    if (ip.includes('.')) {
       const parts = ip.split('.');
       if (parts.length === 4) return `${parts[0]}.${parts[1]}.*.*`;
-    } else if (ip.includes(':')) { // IPv6
+    } else if (ip.includes(':')) {
       const parts = ip.split(':');
       if (parts.length > 2) return `${parts[0]}:${parts[1]}:****:****`;
     }
@@ -93,18 +90,13 @@ export default async function (ctx) {
   let d;
   try {
     const { host, port, username, password, privateKey, widgetName, bwhVeid, bwhApiKey, trafficLimitGB, resetDay } = SERVER_CONFIG;
-    
-    if (!host) {
-      throw new Error('未配置 SERVER_HOST 环境变量');
-    }
+    if (!host) throw new Error('未配置 SERVER_HOST 环境变量');
 
-    // 🛠️ 新增核心修复：处理私钥格式及换行符问题
     let finalKey = privateKey;
     if (privateKey && typeof privateKey === 'string') {
         const raw = privateKey.trim();
         const headerMatch = raw.match(/-----BEGIN [A-Z ]+-----/);
         const footerMatch = raw.match(/-----END [A-Z ]+-----/);
-        
         if (headerMatch && footerMatch) {
             const header = headerMatch[0];
             const footer = footerMatch[0];
@@ -125,7 +117,6 @@ export default async function (ctx) {
       } catch (e) { console.log('BWH API Error:', e); }
     }
 
-    // 这里已经替换为 finalKey 来连接 SSH
     const session = await ctx.ssh.connect({
       host, port: Number(port || 22), username,
       ...(finalKey ? { privateKey: finalKey } : { password }),
@@ -150,7 +141,6 @@ export default async function (ctx) {
     const p = stdout.split(SEP).map(s => s.trim());
     const hostname = widgetName !== 'My Node' ? widgetName : (p[0] || 'Server');
     const load = (p[1] || '0 0 0').split(' ').slice(0, 3);
-    
     const upSec = parseFloat((p[2] || '0').split(' ')[0]);
     const upDays = Math.floor(upSec / 86400);
     const upHours = Math.floor((upSec % 86400) / 3600);
@@ -212,7 +202,6 @@ export default async function (ctx) {
       tfPct = Math.min((tfUsed / tfTotal) * 100, 100) || 0;
       const rd = new Date((bwhData.data_next_reset || 0) * 1000);
       tfReset = `${rd.getMonth() + 1}月${rd.getDate()}日 ${String(rd.getHours()).padStart(2, '0')}:${String(rd.getMinutes()).padStart(2, '0')}`;
-      
       if (bwhData.ip_addresses && bwhData.ip_addresses[0]) ipInfo = maskIP(bwhData.ip_addresses[0]);
       if (bwhData.node_location) locInfo = bwhData.node_location;
     } else {
@@ -238,37 +227,25 @@ export default async function (ctx) {
   const bar = (pct, color, h = 6) => {
     const segCount = 24; 
     const activeCount = Math.round((Math.max(0, Math.min(100, pct)) / 100) * segCount);
-    
     return {
-      type: 'stack', 
-      direction: 'row', 
-      height: h, 
-      gap: 1.5, 
+      type: 'stack', direction: 'row', height: h, gap: 1.5, 
       children: Array.from({ length: segCount }).map((_, i) => {
         const isActive = i < activeCount;
         const op = isActive ? (0.4 + 0.6 * (i / Math.max(activeCount - 1, 1))) : 1;
-        
-        return {
-          type: 'stack', 
-          flex: 1, 
-          height: h, 
-          borderRadius: 1, 
-          backgroundColor: isActive ? color : C.barBg, 
-          opacity: op
-        };
+        return { type: 'stack', flex: 1, height: h, borderRadius: 1, backgroundColor: isActive ? color : C.barBg, opacity: op };
       })
     };
   };
 
   const divider = { type: 'stack', height: 1, backgroundColor: C.barBg, children: [{ type: 'spacer' }] };
 
+  // 🛠️ 关键修改点：删除了网速显示
   const header = () => ({
     type: 'stack', direction: 'row', alignItems: 'center', gap: 4, children: [
       { type: 'image', src: 'sf-symbol:server.rack', color: C.text, width: 14, height: 14 },
       { type: 'text', text: d.hostname, font: { size: 'headline', weight: 'bold' }, textColor: C.text, maxLines: 1, minScale: 0.6 },
       { type: 'spacer' },
-      { type: 'text', text: `↓${fmtBytes(d.rxRate)}/s ↑${fmtBytes(d.txRate)}/s`, font: { size: 9, family: 'Menlo', weight: 'bold' }, textColor: C.dim, minScale: 0.8 },
-      { type: 'text', text: '•', font: { size: 9 }, textColor: C.dim, opacity: 0.6 },
+      // 原网速显示位置已清空，仅保留运行时长
       { type: 'text', text: d.uptime, font: { size: 10, weight: 'medium' }, textColor: C.dim, maxLines: 1, minScale: 0.8 },
     ],
   });
@@ -293,6 +270,7 @@ export default async function (ctx) {
     };
   }
 
+  // 小组件 UI 保持原有逻辑
   if (ctx.widgetFamily === 'systemSmall') {
     return {
       type: 'widget', backgroundColor: C.bg, padding: [12, 16], gap: 5, 
