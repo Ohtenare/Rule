@@ -1,42 +1,44 @@
 /**
- * =================================================================
- * 🖥️ Server Monitor Widget Pro (Private Key Auto-Fix Edition)
- * =================================================================
- * * 📌 环境配置说明 (ctx.env):
- * -----------------------------------------------------------------
- * SERVER_HOST      : 服务器 IP 或 域名 (必填)
- * SERVER_USER      : SSH 用户名 (默认: root)
- * SERVER_PORT      : SSH 端口 (默认: 22)
- * SERVER_PASSWORD  : SSH 密码 (与 SERVER_KEY 二选一)
- * SERVER_KEY       : SSH 私钥 (支持 OpenSSH/PEM 格式，自动修复换行符)
- * WIDGET_NAME      : 小组件显示的名称 (可选)
- * MASK_IP          : 是否开启 IP 打码 (true/false, 默认: false)
- * * 📊 流量统计配置 (二选一):
- * -----------------------------------------------------------------
- * 方案 A (搬瓦工 API):
- * BWH_VEID         : 搬瓦工 VEID
- * BWH_API_KEY      : 搬瓦工 API KEY
- * * 方案 B (自定义设置):
- * TRAFFIC_LIMIT    : 每月流量上限，单位 GB (默认: 2000)
- * RESET_DAY        : 每月流量重置日期 (默认: 1)
- * =================================================================
+ * ====================================================================
+ * 🖥️ Server Monitor Widget Pro (统一 UI 版 - 仪表盘进度条)
+ * ====================================================================
+ *
+ * 📌 环境配置说明 (ctx.env):
+ * ------------------------
+ * SERVER_HOST     : 服务器 IP 或 域名 (必填)
+ * SERVER_USER     : SSH 用户名 (默认: root)
+ * SERVER_PORT     : SSH 端口 (默认: 22)
+ * SERVER_PASSWORD : SSH 密码 (与 SERVER_KEY 二选一)
+ * SERVER_KEY      : SSH 私钥 (支持直接无脑粘贴，自动修复格式和空格)
+ * WIDGET_NAME     : 小组件显示的名称 (可选，默认: My Node)
+ * MASK_IP         : IP 打码开关 (可选，true/false，默认: true)
+ *
+ * 📊 流量统计配置 (二选一):
+ * ------------------------
+ * 方案 A (搬瓦工 API - 优先):
+ * BWH_VEID        : 搬瓦工 VEID
+ * BWH_API_KEY     : 搬瓦工 API KEY
+ *
+ * 方案 B (普通 VPS 自定义设置):
+ * TRAFFIC_LIMIT   : 每月流量上限，单位 GB (默认: 2000)
+ * RESET_DAY       : 每月流量重置日期 (默认: 1)
+ * ====================================================================
  */
-
 export default async function (ctx) {
   const env = ctx.env || {}; 
   
   const SERVER_CONFIG = {
-    widgetName: env.WIDGET_NAME || 'My Node',        
-    host: env.SERVER_HOST || '',                     
-    port: Number(env.SERVER_PORT) || 22,             
-    username: env.SERVER_USER || 'root',             
-    password: env.SERVER_PASSWORD || '',             
-    privateKey: env.SERVER_KEY || '',                
-    maskIp: String(env.MASK_IP).toLowerCase() === 'true', // 新增：打码开关配置
-    bwhVeid: env.BWH_VEID || '',                     
-    bwhApiKey: env.BWH_API_KEY || '',                
-    trafficLimitGB: Number(env.TRAFFIC_LIMIT) || 2000, 
-    resetDay: Number(env.RESET_DAY) || 1             
+    widgetName: env.WIDGET_NAME || 'My Node',
+    host: env.SERVER_HOST || '',
+    port: Number(env.SERVER_PORT) || 22,
+    username: env.SERVER_USER || 'root',
+    password: env.SERVER_PASSWORD || '',
+    privateKey: env.SERVER_KEY || '', 
+    maskIp: env.MASK_IP !== undefined ? String(env.MASK_IP) === 'true' : true, // 默认开启打码
+    bwhVeid: env.BWH_VEID || '',
+    bwhApiKey: env.BWH_API_KEY || '',
+    trafficLimitGB: Number(env.TRAFFIC_LIMIT) || 2000,
+    resetDay: Number(env.RESET_DAY) || 1
   };
 
   // 🎨 统一 UI 规范颜色
@@ -53,6 +55,19 @@ export default async function (ctx) {
     netTx: { light: '#5856D6', dark: '#5E5CE6' },    
   };
 
+  // 🔒 IP 打码辅助函数
+  const maskIP = (ip) => {
+    if (!ip || !SERVER_CONFIG.maskIp) return ip;
+    if (ip.includes('.')) { // IPv4
+      const parts = ip.split('.');
+      if (parts.length === 4) return `${parts[0]}.${parts[1]}.*.*`;
+    } else if (ip.includes(':')) { // IPv6
+      const parts = ip.split(':');
+      if (parts.length > 2) return `${parts[0]}:${parts[1]}:****:****`;
+    }
+    return ip;
+  };
+
   const getTrafficColor = (pct) => {
     if (pct >= 85) return { light: '#FF3B30', dark: '#FF453A' }; 
     if (pct >= 60) return { light: '#FF9500', dark: '#FF9F0A' }; 
@@ -65,20 +80,6 @@ export default async function (ctx) {
     if (b >= 1024 ** 2) return (b / 1024 ** 2).toFixed(1) + 'M';
     if (b >= 1024)      return (b / 1024).toFixed(0) + 'K';
     return Math.round(b) + 'B';
-  };
-
-  // 🔒 新增：IP 打码处理逻辑
-  const processIP = (ip) => {
-    if (!ip || !SERVER_CONFIG.maskIp) return ip;
-    if (ip.includes('.')) { // IPv4
-      const p = ip.split('.');
-      return p.length === 4 ? `${p[0]}.${p[1]}.*.*` : ip;
-    }
-    if (ip.includes(':')) { // IPv6
-      const p = ip.split(':');
-      return `${p[0]}:${p[1]}:****:****`;
-    }
-    return ip;
   };
 
   const getNextResetDate = (resetDay) => {
@@ -97,7 +98,7 @@ export default async function (ctx) {
       throw new Error('未配置 SERVER_HOST 环境变量');
     }
 
-    // 🛠️ 移植核心修复：处理私钥格式及换行符问题
+    // 🛠️ 新增核心修复：处理私钥格式及换行符问题
     let finalKey = privateKey;
     if (privateKey && typeof privateKey === 'string') {
         const raw = privateKey.trim();
@@ -124,6 +125,7 @@ export default async function (ctx) {
       } catch (e) { console.log('BWH API Error:', e); }
     }
 
+    // 这里已经替换为 finalKey 来连接 SSH
     const session = await ctx.ssh.connect({
       host, port: Number(port || 22), username,
       ...(finalKey ? { privateKey: finalKey } : { password }),
@@ -179,12 +181,14 @@ export default async function (ctx) {
     const diskPct = parseInt(df[4]) || 0;
     const cores = parseInt(p[6]) || 1;
 
-    let ipInfo = processIP(host); // 应用打码
+    let ipInfo = maskIP(host);
     let locInfo = '未知';
     const ipApiLines = (p[7] || '').split('\n').map(s => s.trim()).filter(Boolean);
     if (ipApiLines.length >= 3) {
       locInfo = `${ipApiLines[0]} ${ipApiLines[1]}`.replace(/United States/g, 'US').replace(/United Kingdom/g, 'UK');
-      ipInfo = processIP(ipApiLines[2]); // 应用打码
+      ipInfo = maskIP(ipApiLines[2]);
+    } else if (ipApiLines.length > 0) {
+      ipInfo = maskIP(ipApiLines[ipApiLines.length - 1]);
     }
 
     const nn = (p[8] || '0 0').split(' ');
@@ -208,7 +212,8 @@ export default async function (ctx) {
       tfPct = Math.min((tfUsed / tfTotal) * 100, 100) || 0;
       const rd = new Date((bwhData.data_next_reset || 0) * 1000);
       tfReset = `${rd.getMonth() + 1}月${rd.getDate()}日 ${String(rd.getHours()).padStart(2, '0')}:${String(rd.getMinutes()).padStart(2, '0')}`;
-      if (bwhData.ip_addresses && bwhData.ip_addresses[0]) ipInfo = processIP(bwhData.ip_addresses[0]); // 应用打码
+      
+      if (bwhData.ip_addresses && bwhData.ip_addresses[0]) ipInfo = maskIP(bwhData.ip_addresses[0]);
       if (bwhData.node_location) locInfo = bwhData.node_location;
     } else {
       tfUsed = netRx + netTx;
@@ -230,18 +235,25 @@ export default async function (ctx) {
     d = { error: String(e.message || e) };
   }
 
-  // 🛠️ 进度条渲染函数
   const bar = (pct, color, h = 6) => {
     const segCount = 24; 
     const activeCount = Math.round((Math.max(0, Math.min(100, pct)) / 100) * segCount);
+    
     return {
-      type: 'stack', direction: 'row', height: h, gap: 1.5,
+      type: 'stack', 
+      direction: 'row', 
+      height: h, 
+      gap: 1.5, 
       children: Array.from({ length: segCount }).map((_, i) => {
         const isActive = i < activeCount;
         const op = isActive ? (0.4 + 0.6 * (i / Math.max(activeCount - 1, 1))) : 1;
+        
         return {
-          type: 'stack', flex: 1, height: h, borderRadius: 1,
-          backgroundColor: isActive ? color : C.barBg,
+          type: 'stack', 
+          flex: 1, 
+          height: h, 
+          borderRadius: 1, 
+          backgroundColor: isActive ? color : C.barBg, 
           opacity: op
         };
       })
@@ -281,7 +293,6 @@ export default async function (ctx) {
     };
   }
 
-  // --- 渲染逻辑 ---
   if (ctx.widgetFamily === 'systemSmall') {
     return {
       type: 'widget', backgroundColor: C.bg, padding: [12, 16], gap: 5, 
@@ -313,7 +324,6 @@ export default async function (ctx) {
     };
   }
 
-  // Medium 及其他布局参考
   if (ctx.widgetFamily === 'systemMedium') {
     return {
       type: 'widget', backgroundColor: C.bg, padding: [12, 16], 
@@ -327,7 +337,10 @@ export default async function (ctx) {
               { type: 'text', text: `CPU ${d.cores}C`, font: { size: 11, weight: 'bold' }, textColor: C.text },
               { type: 'text', text: `${d.cpuPct}%`, font: { size: 11, weight: 'heavy', family: 'Menlo' }, textColor: C.cpu },
               { type: 'spacer' },
+              { type: 'image', src: 'sf-symbol:network', color: C.text, width: 10, height: 10 },
               { type: 'text', text: d.ipInfo, font: { size: 10, family: 'Menlo', weight: 'bold' }, textColor: C.text },
+              { type: 'text', text: '•', font: { size: 10 }, textColor: C.dim },
+              { type: 'text', text: d.locInfo, font: { size: 10, weight: 'bold' }, textColor: C.text, maxLines: 1, minScale: 0.8 },
             ]},
             bar(d.cpuPct, C.cpu, 6),
           ]},
@@ -337,7 +350,7 @@ export default async function (ctx) {
               { type: 'text', text: 'MEM', font: { size: 11, weight: 'bold' }, textColor: C.text },
               { type: 'text', text: `${d.memPct}%`, font: { size: 11, weight: 'heavy', family: 'Menlo' }, textColor: C.mem },
               { type: 'spacer' },
-              { type: 'text', text: `${fmtBytes(d.memUsed)} / ${fmtBytes(d.memTotal)}`, font: { size: 10, family: 'Menlo' }, textColor: C.dim },
+              { type: 'text', text: `${fmtBytes(d.memUsed)} / ${fmtBytes(d.memTotal)}`, font: { size: 10, family: 'Menlo', weight: 'medium' }, textColor: C.dim },
             ]},
             bar(d.memPct, C.mem, 6),
           ]},
@@ -347,9 +360,19 @@ export default async function (ctx) {
               { type: 'text', text: 'TRAF', font: { size: 11, weight: 'bold' }, textColor: C.text },
               { type: 'text', text: `${d.tfPct.toFixed(1)}%`, font: { size: 11, weight: 'heavy', family: 'Menlo' }, textColor: getTrafficColor(d.tfPct) },
               { type: 'spacer' },
-              { type: 'text', text: `${fmtBytes(d.tfUsed)} / ${fmtBytes(d.tfTotal)}`, font: { size: 10, family: 'Menlo' }, textColor: C.dim },
+              { type: 'text', text: `${fmtBytes(d.tfUsed)} / ${fmtBytes(d.tfTotal)}`, font: { size: 10, family: 'Menlo', weight: 'medium' }, textColor: C.dim },
             ]},
             bar(d.tfPct, getTrafficColor(d.tfPct), 6),
+          ]},
+          { type: 'stack', direction: 'column', gap: 3, children: [
+            { type: 'stack', direction: 'row', alignItems: 'center', gap: 4, children: [
+              { type: 'image', src: 'sf-symbol:internaldrive', color: C.disk, width: 11, height: 11 },
+              { type: 'text', text: 'DSK', font: { size: 11, weight: 'bold' }, textColor: C.text },
+              { type: 'text', text: `${d.diskPct}%`, font: { size: 11, weight: 'heavy', family: 'Menlo' }, textColor: C.disk },
+              { type: 'spacer' },
+              { type: 'text', text: `${fmtBytes(d.diskUsed)} / ${fmtBytes(d.diskTotal)}`, font: { size: 10, family: 'Menlo', weight: 'medium' }, textColor: C.dim },
+            ]},
+            bar(d.diskPct, C.disk, 6),
           ]},
         ]},
         { type: 'spacer' },
@@ -358,7 +381,6 @@ export default async function (ctx) {
     };
   }
 
-  // 默认返回大尺寸布局
   return {
     type: 'widget', backgroundColor: C.bg, padding: [14, 16], gap: 8, 
     children: [
@@ -369,7 +391,10 @@ export default async function (ctx) {
         { type: 'text', text: `CPU ${d.cores}C`, font: { size: 12, weight: 'bold' }, textColor: C.text },
         { type: 'text', text: `${d.cpuPct}%`, font: { size: 12, weight: 'heavy', family: 'Menlo' }, textColor: C.cpu },
         { type: 'spacer' },
+        { type: 'image', src: 'sf-symbol:network', color: C.text, width: 11, height: 11 },
         { type: 'text', text: d.ipInfo, font: { size: 11, family: 'Menlo', weight: 'bold' }, textColor: C.text },
+        { type: 'text', text: '•', font: { size: 11 }, textColor: C.dim },
+        { type: 'text', text: d.locInfo, font: { size: 11, weight: 'bold' }, textColor: C.text, maxLines: 1 },
       ]},
       bar(d.cpuPct, C.cpu, 7),
       divider,
@@ -378,7 +403,7 @@ export default async function (ctx) {
         { type: 'text', text: 'MEMORY', font: { size: 12, weight: 'bold' }, textColor: C.text },
         { type: 'text', text: `${d.memPct}%`, font: { size: 12, weight: 'heavy', family: 'Menlo' }, textColor: C.mem },
         { type: 'spacer' },
-        { type: 'text', text: `${fmtBytes(d.memUsed)} / ${fmtBytes(d.memTotal)}`, font: { size: 11, family: 'Menlo' }, textColor: C.dim },
+        { type: 'text', text: `${fmtBytes(d.memUsed)} / ${fmtBytes(d.memTotal)}`, font: { size: 11, family: 'Menlo', weight: 'medium' }, textColor: C.dim },
       ]},
       bar(d.memPct, C.mem, 7),
       divider,
@@ -387,9 +412,18 @@ export default async function (ctx) {
         { type: 'text', text: 'TRAFFIC', font: { size: 12, weight: 'bold' }, textColor: C.text },
         { type: 'text', text: `${d.tfPct.toFixed(1)}%`, font: { size: 12, weight: 'heavy', family: 'Menlo' }, textColor: getTrafficColor(d.tfPct) },
         { type: 'spacer' },
-        { type: 'text', text: `${fmtBytes(d.tfUsed)} / ${fmtBytes(d.tfTotal)}`, font: { size: 11, family: 'Menlo' }, textColor: C.dim },
+        { type: 'text', text: `${fmtBytes(d.tfUsed)} / ${fmtBytes(d.tfTotal)}`, font: { size: 11, family: 'Menlo', weight: 'medium' }, textColor: C.dim },
       ]},
       bar(d.tfPct, getTrafficColor(d.tfPct), 7),
+      divider,
+      { type: 'stack', direction: 'row', alignItems: 'center', gap: 6, children: [
+        { type: 'image', src: 'sf-symbol:internaldrive', color: C.disk, width: 14, height: 14 },
+        { type: 'text', text: 'STORAGE', font: { size: 12, weight: 'bold' }, textColor: C.text },
+        { type: 'text', text: `${d.diskPct}%`, font: { size: 12, weight: 'heavy', family: 'Menlo' }, textColor: C.disk },
+        { type: 'spacer' },
+        { type: 'text', text: `${fmtBytes(d.diskUsed)} / ${fmtBytes(d.diskTotal)}`, font: { size: 11, family: 'Menlo', weight: 'medium' }, textColor: C.dim },
+      ]},
+      bar(d.diskPct, C.disk, 7),
       { type: 'spacer' },
       footer,
     ],
