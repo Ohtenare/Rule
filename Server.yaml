@@ -1,0 +1,57 @@
+name: "Server Monitor 探针"
+description: "服务器状态监控仪表盘配置面板"
+
+env_schema:
+  MASK_IP:
+    name: 节点IP打码
+    description: IP 打码开关 (可选，true/false，默认: true)
+    default_value: "true"
+  WIDGET_NAME:
+    name: 节点名称
+    description: 探针显示的节点名称
+    default_value: "My Node"
+  SERVER_HOST:
+    name: 主机地址
+    description: SSH / 探针服务器地址 (必填)
+    default_value: ""
+  SERVER_PORT:
+    name: 端口
+    description: SSH 端口号
+    default_value: "22"
+  SERVER_USER:
+    name: 用户名
+    description: SSH 登录用户名
+    default_value: "root"
+  SERVER_PASSWORD:
+    name: 密码
+    description: SSH 密码（与私钥二选一）
+    default_value: ""
+  SERVER_KEY:
+    name: 私钥
+    description: SSH 私钥（与密码二选一）
+    default_value: ""
+  BWH_VEID:
+    name: 搬瓦工 VEID
+    description: 填写搬瓦工的 VEID (选填)
+    default_value: ""
+  BWH_API_KEY:
+    name: 搬瓦工 API Key
+    description: 填写搬瓦工的 API Key (选填)
+    default_value: ""
+  TRAFFIC_LIMIT:
+    name: 流量限制 (GB)
+    description: 每月流量上限
+    default_value: "2000"
+  RESET_DAY:
+    name: 流量重置日
+    description: 每月几号重置流量
+    default_value: "1"
+
+scriptings:
+- generic:
+    name: Server Monitor 探针
+    script_url: https://raw.githubusercontent.com/xcgtb/Egern-Widgets/main/Probe.js?v=333
+
+widgets:
+- name: Server Monitor 探针
+  script_name: Server Monitor 探针
