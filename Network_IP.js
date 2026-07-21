@@ -76,11 +76,14 @@ export default async function(ctx) {
     if (/alibaba|aliyun/i.test(s)) return "阿里云";
     if (/tencent/i.test(s)) return "腾讯云";
     if (/oracle/i.test(s)) return "Oracle Cloud";
+    // 纯数字(ASN 编号)且无 ISP 名称时显示为 "ASN: xxxxx"
+    if (/^\d+$/.test(s)) return `ASN: ${s}`;
     return s.length > 11 ? s.substring(0, 11) + "..." : s; 
   };
 
   const getFlag = (code) => {
-    if (!code || code.toUpperCase() === 'TW') return '🇨🇳'; 
+    if (!code) return '🏳️'; 
+    if (code.toUpperCase() === 'TW') return '🇨🇳'; 
     if (code.toUpperCase() === 'XX' || code === 'OK') return '✅';
     return String.fromCodePoint(...code.toUpperCase().split('').map(c => 127397 + c.charCodeAt()));
   };
@@ -151,16 +154,39 @@ export default async function(ctx) {
     } catch { return null; }
   };
 
-  // 🌟 延迟测试链接已修改为 Apple 测速端点
-  const fetchLocalDelay = async () => {
-    const start = Date.now();
-    try { await ctx.http.get('https://www.apple.com/library/test/success.html', { timeout: 2000 }); return `${Date.now() - start} ms`; } catch (e) { return "超时"; }
+  // 🌟 带备用冗余的延迟测试函数
+  const testDelay = async (urls, timeout = 2000) => {
+    for (const url of urls) {
+      const start = Date.now();
+      try {
+        await ctx.http.get(url, { timeout });
+        return `${Date.now() - start} ms`;
+      } catch {
+        continue;
+      }
+    }
+    return "超时";
   };
 
-  const fetchProxyDelay = async () => {
-    const start = Date.now();
-    try { await ctx.http.get('https://www.apple.com/library/test/success.html', { timeout: 2000 }); return `${Date.now() - start} ms`; } catch (e) { return "超时"; }
-  };
+  // 本地直连延迟测试(选国内可用的 CDN 小文件)
+  const LOCAL_DELAY_URLS = [
+    'https://www.apple.com/library/test/success.html',
+    'https://www.baidu.com/favicon.ico',
+    'https://cdn.aliyun.com/favicon.ico',
+    'https://www.qq.com/favicon.ico',
+    'https://music.163.com/favicon.ico'
+  ];
+
+  // 代理延迟测试(选返回客户端 IP 的服务,确保走代理链路)
+  const PROXY_DELAY_URLS = [
+    'https://api.ipify.org?format=json',
+    'https://icanhazip.com',
+    'https://v4.ident.me',
+    'https://api.ip.sb/ip'
+  ];
+
+  const fetchLocalDelay = async () => testDelay(LOCAL_DELAY_URLS);
+  const fetchProxyDelay = async () => testDelay(PROXY_DELAY_URLS);
 
   // --- 流媒体与 AI 解锁检测逻辑 ---
   async function checkNetflix() {
@@ -169,7 +195,8 @@ export default async function(ctx) {
         const r = await ctx.http.get(`https://www.netflix.com/title/${id}`, { timeout: 3500, headers: commonHeaders, followRedirect: false }).catch(() => null);
         return r ? r.status : 0;
       };
-      return (await checkStatus(70143836)) === 200 ? "OK" : ((await checkStatus(81280792)) === 200 ? "🍿" : "❌");
+      // 🌟 修复: 81280792=自制剧(基础解锁=OK), 70143836=非自制区域限定(全解锁=🍿)
+      return (await checkStatus(81280792)) === 200 ? "OK" : ((await checkStatus(70143836)) === 200 ? "🍿" : "❌");
     } catch { return "❌"; }
   }
 
@@ -186,7 +213,8 @@ export default async function(ctx) {
       const r = await ctx.http.get("https://www.tiktok.com/explore", { timeout: 3500, headers: commonHeaders, followRedirect: false }).catch(() => null);
       if (!r || r.status === 403 || r.status === 401) return "❌";
       const body = await readBody(r);
-      if (body.includes("Access Denied") || body.includes("Please wait...")) return "❌";
+      // 🌟 修复: 仅 "Access Denied" 判定失败, "Please wait..." 是 CF 挑战不应误判
+      if (body.includes("Access Denied")) return "❌";
       const m = body.match(/"region":"([A-Z]{2})"/i);
       return m?.[1] ? m[1].toUpperCase() : "OK";
     } catch { return "❌"; }
@@ -206,7 +234,8 @@ export default async function(ctx) {
       if (!res) return "❌";
       const body = await readBody(res);
       if (body.includes("App unavailable") || body.includes("certain regions")) return "❌";
-      if (res.status === 403 && (body.includes("cf-turnstile") || body.includes("Just a moment"))) return "OK";
+      // 🌟 修复: CF 挑战(403 + cf-turnstile / Just a moment)不代表 Claude 可用,判为 ❌
+      if (res.status === 403 && (body.includes("cf-turnstile") || body.includes("Just a moment"))) return "❌";
       return (res.status === 200 || res.status === 301 || res.status === 302) ? "OK" : "❌";
     } catch { return "❌"; }
   }
@@ -232,11 +261,15 @@ export default async function(ctx) {
   let finalPurity = null;
   let finalUnlocks = null;
 
-  if (masterCache && 
+  // 🌟 修复: 缓存命中时增加数据完整性校验
+  const cacheValid = masterCache && 
       masterCache.ip === currentIP && 
       masterCache.networkLock === networkLockKey && 
-      (Date.now() - masterCache.timestamp < CACHE_TTL)) {
-    
+      (Date.now() - masterCache.timestamp < CACHE_TTL) &&
+      masterCache.proxyData && 
+      masterCache.unlocks;
+
+  if (cacheValid) {
     finalProxy = masterCache.proxyData;
     finalPurity = masterCache.purityData;
     finalUnlocks = masterCache.unlocks;
@@ -255,7 +288,7 @@ export default async function(ctx) {
 
     const cc = fullData.country_code || "XX";
     
-    // 🌍 国家/地区高级映射字典
+    // 🌟 国家/地区高级映射字典 (已修复 "智电" -> "智利")
     const ccMap = {
       "CN": "中国", "HK": "香港", "MO": "澳门", "TW": "台湾", "SG": "新加坡", 
       "JP": "日本", "KR": "韩国", "MY": "马来西亚", "TH": "泰国", "VN": "越南", 
@@ -263,7 +296,7 @@ export default async function(ctx) {
       "KH": "柬埔寨", "LA": "老挝", "MM": "缅甸", "PK": "巴基斯坦", "BD": "孟加拉",
       "LK": "斯里兰卡", "KZ": "哈萨克斯坦", "UZ": "乌兹别克斯坦", "FJ": "斐济",
       "US": "美国", "CA": "加拿大", "MX": "墨西哥", "BR": "巴西", "AR": "阿根廷", 
-      "CL": "智电", "CO": "哥伦比亚", "PE": "秘鲁", "UY": "乌拉圭", "PA": "巴拿马",
+      "CL": "智利", "CO": "哥伦比亚", "PE": "秘鲁", "UY": "乌拉圭", "PA": "巴拿马",
       "UK": "英国", "GB": "英国", "DE": "德国", "FR": "法国", "NL": "荷兰", 
       "RU": "俄罗斯", "IT": "意大利", "ES": "西班牙", "CH": "瑞士", "SE": "瑞典", 
       "NO": "挪威", "FI": "芬兰", "DK": "丹麦", "IE": "爱尔兰", "BE": "比利时", 
@@ -276,7 +309,7 @@ export default async function(ctx) {
       "NG": "尼日利亚", "KE": "肯尼亚", "GH": "加纳", "DZ": "阿尔及利亚"
     };
 
-    // 🏙️ 城市高级汉化字典
+    // 🏙️ 城市高级汉化字典 (已修复 "圣彼保" -> "圣彼得堡")
     const cityMap = {
       "tokyo": "东京", "osaka": "大阪", "nagoya": "名古屋", "fukuoka": "福冈",
       "hong kong": "香港", "hongkong": "香港", "taipei": "台北", "hsinchu": "新竹", 
@@ -298,7 +331,7 @@ export default async function(ctx) {
       "zurich": "苏黎世", "geneva": "日内瓦", "stockholm": "斯德哥尔摩", "oslo": "奥斯陆",
       "helsinki": "赫尔辛基", "copenhagen": "哥本哈根", "dublin": "都柏林", "brussels": "布鲁塞尔",
       "vienna": "维也纳", "warsaw": "华沙", "prague": "布拉格", "budapest": "布达佩斯",
-      "moscow": "莫斯科", "st petersburg": "圣彼得堡", "saint petersburg": "圣彼保",
+      "moscow": "莫斯科", "st petersburg": "圣彼得堡", "saint petersburg": "圣彼得堡",
       "kiev": "基辅", "kyiv": "基辅", "istanbul": "伊斯坦布尔", "lisbon": "里斯本",
       "dubai": "迪拜", "abu dhabi": "阿布扎比", "riyadh": "利雅得", "jeddah": "吉达",
       "tel aviv": "特拉维夫", "johannesburg": "约翰内斯堡", "cape town": "开普敦", "cairo": "开罗"
@@ -310,6 +343,7 @@ export default async function(ctx) {
     
     const finalLocationString = (cnCountry === cnCity || cnCity === "") ? cnCountry : `${cnCountry} ${cnCity}`;
 
+    // 🌟 修复: ISP 优先使用 org 字段,避免显示纯 ASN 数字
     finalProxy = {
       ip: fullData.ip || currentIP,
       loc: `${getFlag(cc)} ${finalLocationString}`.trim(),
@@ -345,15 +379,18 @@ export default async function(ctx) {
     else { riskTxt = `纯净 (${risk})`; riskCol = C.netRx; riskIc = "checkmark.shield.fill"; }
   }
 
+  // 🌟 修复: 移除死代码 "APP" 分支
   const fmtUnlock = (name, res, cc) => {
     let flag = "🚫";
-    if (res === "🍿" || res === "APP") flag = res;
+    if (res === "🍿") flag = res;
     else if (res !== "❌") flag = getFlag(res === "OK" || res === "XX" ? cc : res);
     return `${name} ${flag}`; 
   };
   
-  const textVideo = `${fmtUnlock('NF', finalUnlocks.rNF, finalProxy.cc)}  ${fmtUnlock('DP', finalUnlocks.rDP, finalProxy.cc)}  ${fmtUnlock('TK', finalUnlocks.rTK, finalProxy.cc)}`;
-  const textAI = `${fmtUnlock('GPT', finalUnlocks.rGPT, finalProxy.cc)}  ${fmtUnlock('CL', finalUnlocks.rCL, finalProxy.cc)}  ${fmtUnlock('GM', finalUnlocks.rGM, finalProxy.cc)}`;
+  // 🌟 修复: 代理失败(cc="XX" 或 IP="获取失败")时,解锁状态显示为 "—"
+  const proxyFailed = !finalProxy || finalProxy.ip === "获取失败" || finalProxy.cc === "XX";
+  const textVideo = proxyFailed ? "NF —  DP —  TK —" : `${fmtUnlock('NF', finalUnlocks.rNF, finalProxy.cc)}  ${fmtUnlock('DP', finalUnlocks.rDP, finalProxy.cc)}  ${fmtUnlock('TK', finalUnlocks.rTK, finalProxy.cc)}`;
+  const textAI = proxyFailed ? "GPT —  CL —  GM —" : `${fmtUnlock('GPT', finalUnlocks.rGPT, finalProxy.cc)}  ${fmtUnlock('CL', finalUnlocks.rCL, finalProxy.cc)}  ${fmtUnlock('GM', finalUnlocks.rGM, finalProxy.cc)}`;
 
   const now = new Date();
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -401,9 +438,9 @@ export default async function(ctx) {
           
           // 【右边栏】：中转代理出口
           { type: 'stack', direction: 'column', gap: 4.5, flex: 1, children: [
-              Row("paperplane.fill", C.mem, "出口", fmtIP(finalProxy.ip), C.text), 
-              Row("mappin.and.ellipse", C.mem, "落地", finalProxy.loc, C.text),
-              Row("server.rack", C.mem, "厂商", finalProxy.isp, C.text),
+              Row("paperplane.fill", C.mem, "出口", fmtIP(finalProxy?.ip || "获取失败"), C.text), 
+              Row("mappin.and.ellipse", C.mem, "落地", finalProxy?.loc || "未知", C.text),
+              Row("server.rack", C.mem, "厂商", finalProxy?.isp || "未知", C.text),
               Row(nativeIc, nativeCol, "属性", nativeText, C.text), 
               Row(riskIc, riskCol, "纯净", riskTxt, riskCol),
               Row("timer", C.mem, "延迟", proxyDelay, C.text), 
