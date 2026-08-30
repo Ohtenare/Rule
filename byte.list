@@ -1,4 +1,3 @@
-# > 字节跳动
 DOMAIN, ad.zijieapi.com,REJECT
 DOMAIN, applog.zijieapi.com,REJECT
 DOMAIN-SUFFIX,-normal-lq.zijieapi.com,REJECT
