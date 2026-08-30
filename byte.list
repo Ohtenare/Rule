@@ -1,21 +1,21 @@
 # > 字节跳动
-DOMAIN, ad.zijieapi.com
-DOMAIN, applog.zijieapi.com
-DOMAIN-SUFFIX,-normal-lq.zijieapi.com
-DOMAIN-SUFFIX, dm.bytedance.com
-DOMAIN-SUFFIX, xlog-va.byteoversea.com
-DOMAIN-SUFFIX, tosv.byted.org
-DOMAIN-SUFFIX, tosv.boe.byted.org
-DOMAIN-SUFFIX, extlog.snssdk.com
-DOMAIN-SUFFIX, sdfp.snssdk.com
-DOMAIN-SUFFIX, temai.snssdk.com
-DOMAIN-SUFFIX, xlog.snssdk.com
-DOMAIN-SUFFIX, ad.toutiao.com
-DOMAIN-SUFFIX, dm.toutiao.com
-DOMAIN-SUFFIX, dsp.toutiao.com
-DOMAIN-SUFFIX, nativeapp.toutiao.com
-DOMAIN-SUFFIX, partner.toutiao.com
-DOMAIN-SUFFIX, track.toutiao.com
-DOMAIN-SUFFIX, dm.pstatp.com
-DOMAIN-SUFFIX, pb3.pstatp.com
-DOMAIN-SUFFIX, s3a.pstatp.com
+DOMAIN, ad.zijieapi.com,REJECT
+DOMAIN, applog.zijieapi.com,REJECT
+DOMAIN-SUFFIX,-normal-lq.zijieapi.com,REJECT
+DOMAIN-SUFFIX, dm.bytedance.com,REJECT
+DOMAIN-SUFFIX, xlog-va.byteoversea.com,REJECT
+DOMAIN-SUFFIX, tosv.byted.org,REJECT
+DOMAIN-SUFFIX, tosv.boe.byted.org,REJECT
+DOMAIN-SUFFIX, extlog.snssdk.com,REJECT
+DOMAIN-SUFFIX, sdfp.snssdk.com,REJECT
+DOMAIN-SUFFIX, temai.snssdk.com,REJECT
+DOMAIN-SUFFIX, xlog.snssdk.com,REJECT
+DOMAIN-SUFFIX, ad.toutiao.com,REJECT
+DOMAIN-SUFFIX, dm.toutiao.com,REJECT
+DOMAIN-SUFFIX, dsp.toutiao.com,REJECT
+DOMAIN-SUFFIX, nativeapp.toutiao.com,REJECT
+DOMAIN-SUFFIX, partner.toutiao.com,REJECT
+DOMAIN-SUFFIX, track.toutiao.com,REJECT
+DOMAIN-SUFFIX, dm.pstatp.com,REJECT
+DOMAIN-SUFFIX, pb3.pstatp.com,REJECT
+DOMAIN-SUFFIX, s3a.pstatp.com,REJECT
