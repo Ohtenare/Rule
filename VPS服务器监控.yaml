@@ -1,0 +1,47 @@
+name: VPS 服务器监控（仪表盘版）
+description: 通过 SSH 连接 VPS，实时显示 CPU、内存、磁盘、流量用量、运行时长与 IP 地址（支持密码/密钥认证、IPv6、vnstat 流量统计）
+env_schema:
+  SERVER_HOST:
+    name: 服务器地址
+    description: 服务器 IP 或域名（IPv4/IPv6 均可，必填）
+    default_value: ''
+  SERVER_PORT:
+    name: SSH 端口
+    description: 默认 22
+    default_value: '22'
+  SERVER_USER:
+    name: SSH 用户名
+    description: 默认 root
+    default_value: 'root'
+  SERVER_PASSWORD:
+    name: SSH 密码
+    description: 与私钥二选一，私钥优先
+    default_value: ''
+  SERVER_KEY:
+    name: SSH 私钥
+    description: 支持 RSA / Ed25519，可粘贴完整格式或纯 Base64 压缩格式
+    default_value: ''
+  WIDGET_NAME:
+    name: 组件显示名称
+    description: 留空则显示服务器 hostname
+    default_value: ''
+  MASK_IP:
+    name: IP 打码
+    description: true 显示为 123.45.*.* / 2001:db8:****:****，false 显示完整 IP
+    default_value: 'true'
+  TRAFFIC_LIMIT:
+    name: 月流量限额 (GB)
+    description: 用于计算流量百分比，默认 2000
+    default_value: '2000'
+  RESET_DAY:
+    name: 流量重置日
+    description: 每月几号重置（1~31），需与 vnstat 的 MonthRotate 一致
+    default_value: '1'
+scriptings:
+- generic:
+    name: VPS服务器监控
+    script_url: https://raw.githubusercontent.com/Ohtenare/Rule/refs/heads/master/SSH_Server.js
+    timeout: 30
+widgets:
+- name: VPS服务器监控
+  script_name: VPS服务器监控
