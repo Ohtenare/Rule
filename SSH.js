@@ -432,7 +432,7 @@ function mediumWidget(ctx, s) {
   const r = nextReset(ctx.env?.RESET_DAY || 1);
   const st = statusOf(s);
   return {
-    type: 'widget', padding: 14, gap: 8, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
+    type: 'widget', padding: [12, 14], gap: 12, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
       header(s),
       {
@@ -459,7 +459,7 @@ function mediumWidget(ctx, s) {
             metricRow('memorychip', 'MEM', d.memPct, C.mem, `${fmtBytes(d.memUsed)} / ${fmtBytes(d.memTotal)}`, { barW: 175 }),
             metricRow('internaldrive', 'DSK', d.diskPct, C.disk, `${fmtBytes(d.diskUsed)} / ${fmtBytes(d.diskTotal)}`, { barW: 175 }),
             metricRow('antenna.radiowaves.left.and.right', 'TRAF', d.tfPct, trafficColor(d.tfPct), `↓${fmtBytes(d.tfRx)} ↑${fmtBytes(d.tfTx)}`, { barW: 175 }),
-          ], { flex: 1, gap: 6 }),
+          ], { flex: 1, gap: 5, padding: [10, 12] }),
         ],
       },
       footer(ctx, s, r ? (r.days === 0 ? '今日重置' : `重置 ${r.days} 天`) : null),
