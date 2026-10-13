@@ -1,14 +1,12 @@
 /**
- * ⛽ 全国实时油价小组件 · Hark 液态玻璃统一版 v1
+ * ⛽ 全国实时油价小组件 · Hark 液态玻璃统一版 v2
  * 数据源：http://m.qiyoujiage.com/
  * UI 与「订阅流量监控 / VPS 服务器监控 Hark 改版」统一风格
  *
- * 功能：
- *   - 92 / 95 / 98 号汽油 + 0 号柴油实时价格
- *   - 调价趋势提示（可开关）
- *   - 本地缓存：请求失败时显示上次成功数据并标注「缓存」
- *   - 本地 SVG 卡片，液态玻璃渐变背景，无外部依赖
- *   - 支持小 / 中 / 大组件与锁屏组件
+ * v2 修复：
+ *   - region 自动清洗（全角斜杠/空格/大写/非法字符）
+ *   - 价格解析改为逐行匹配，不受页面结构微调影响
+ *   - 错误提示包含实际请求的 region，方便排查
  *
  * Env：
  *   region          地区（拼音，省份/城市 用 / 分隔），默认 hainan/haikou
@@ -32,8 +30,17 @@
 
 function readConfig(ctx) {
   const env = ctx.env || {};
+  // region 自动清洗：全角斜杠/空格、大写、结尾斜杠、非法字符
+  const region = String(env.region || 'hainan/haikou')
+    .trim()
+    .replace(/[　]/g, ' ')           // 全角空格
+    .replace(/[／\/\\]+/g, '/')      // 全角斜杠、反斜杠、连续斜杠 → 单个 /
+    .replace(/\s+/g, '')             // 去掉所有空格
+    .toLowerCase()
+    .replace(/[^a-z0-9\-/]/g, '')    // 只留拼音字符
+    .replace(/^\/+|\/+$/g, '');      // 去掉首尾斜杠
   return {
-    region: String(env.region || 'hainan/haikou').trim(),
+    region: region || 'hainan/haikou',
     showTrend: String(env.SHOW_TREND ?? 'true').trim() !== 'false',
     refreshHours: (() => {
       const v = Number(env.REFRESH_HOURS);
@@ -66,30 +73,37 @@ function parseTrend(html) {
   return `${datePart}调整 ${arrow} ${amount}`.trim();
 }
 
+// 按行清洗后逐行匹配，比跨行正则更稳
 function parsePrices(html) {
-  const nameMap = {
-    '92 号': 'p92', '92': 'p92',
-    '95 号': 'p95', '95': 'p95',
-    '98 号': 'p98', '98': 'p98',
-    '0 号': 'diesel', '柴油': 'diesel',
-  };
+  const nameMap = [
+    [/92/, 'p92'], [/95/, 'p95'], [/98/, 'p98'],
+    [/0\s*号|柴油/, 'diesel'],
+  ];
   const prices = { p92: null, p95: null, p98: null, diesel: null };
-  const reg = /<dl>[\s\S]+?<dt>(.*油)<\/dt>[\s\S]+?<dd>(.*)$元$<\/dd>/gm;
-  let m, count = 0;
-  while ((m = reg.exec(html)) !== null) {
-    count++;
-    const key = Object.keys(nameMap).find(k => m[1].trim().includes(k));
-    if (key) {
-      const v = parseFloat(m[2].trim());
-      if (!isNaN(v)) prices[nameMap[key]] = v;
+  let matched = 0;
+
+  // 把标签拆成单行再匹配，避免跨行正则受页面结构微调影响
+  const rows = html.replace(/>\s+</g, '>\n<').split('\n');
+  for (let i = 0; i < rows.length; i++) {
+    const dt = rows[i].match(/<dt>([^<]*油)<\/dt>/);
+    if (!dt) continue;
+    // dd 可能在同一行或下一行
+    const dd = rows[i].match(/<dd>([\d.]+)$元$<\/dd>/) || (rows[i + 1] || '').match(/<dd>([\d.]+)$元$<\/dd>/);
+    if (!dd) continue;
+    const v = parseFloat(dd[1]);
+    if (isNaN(v)) continue;
+    const hit = nameMap.find(([re]) => re.test(dt[1]));
+    if (hit && prices[hit[1]] === null) {
+      prices[hit[1]] = v;
+      matched++;
     }
   }
-  return count >= 3 ? prices : null;
+  return matched >= 3 ? prices : null;
 }
 
 // 加载 + 缓存：成功存 live，失败回退 stale，无缓存报 error
 async function loadOil(ctx, cfg) {
-  const key = `egern.oilprice.hark.v1.${cfg.region}`;
+  const key = `egern.oilprice.hark.v2.${cfg.region}`;
   try {
     const resp = await ctx.http.get(`http://m.qiyoujiage.com/${cfg.region}.shtml`, {
       headers: {
@@ -98,7 +112,7 @@ async function loadOil(ctx, cfg) {
       },
       timeout: 15000,
     });
-    if (resp.status !== 200) throw new Error(`HTTP ${resp.status}`);
+    if (resp.status !== 200) throw new Error(`HTTP ${resp.status}（检查 region 是否为拼音，如 hainan/haikou）`);
     const html = await resp.text();
 
     let regionName = '';
@@ -107,7 +121,7 @@ async function loadOil(ctx, cfg) {
       regionName = titleMatch[1].trim().replace(/(油价|实时|今日|最新|查询|价格)/g, '').trim();
     }
     const prices = parsePrices(html);
-    if (!prices) throw new Error('价格解析失败');
+    if (!prices) throw new Error(`价格解析失败（region=${cfg.region}，页面结构可能变动）`);
 
     const data = {
       prices,
