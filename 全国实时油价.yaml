@@ -1,0 +1,23 @@
+name: 全国实时油价（液态玻璃版）
+description: 显示 92/95/98 号汽油与柴油实时价格、调价趋势，失败自动显示缓存数据
+env_schema:
+  region:
+    name: 地区
+    description: 省份/城市拼音，用 / 分隔（如 hainan/haikou、guangdong/guangzhou）
+    default_value: 'hainan/haikou'
+  SHOW_TREND:
+    name: 显示调价趋势
+    description: true 显示 / false 隐藏
+    default_value: 'true'
+  REFRESH_HOURS:
+    name: 刷新间隔（小时）
+    description: 范围 0.5 ~ 24，默认 6
+    default_value: '6'
+scriptings:
+- generic:
+    name: 全国实时油价
+    script_url: https://raw.githubusercontent.com/Ohtenare/Rule/refs/heads/master/Oil.js
+    timeout: 30
+widgets:
+- name: 全国实时油价
+  script_name: 全国实时油价
