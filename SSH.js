@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.2
- * 优化：状态移至右上角运行时间前，小号小组件改为中心圆环 + 双排精准对齐百分比
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.3
+ * 修复：小号圆环居中、小号头部精简（仅留状态）、MEM/TRAF 首字母与百分比完美对齐
  */
 
 // ---------------------------------------------------------------------------
@@ -346,6 +346,21 @@ function header(s) {
   };
 }
 
+// 小号组件专属精简头部：只保留名字和状态，空间更宽裕
+function smallHeader(s) {
+  const st = statusOf(s);
+  return {
+    type: 'stack', direction: 'row', alignItems: 'center', gap: 5,
+    children: [
+      icon('server.rack', C.accent, 12),
+      T(s.name, 12, C.text, 'semibold'),
+      { type: 'spacer' },
+      dot(st.color),
+      T(st.label, 10, st.color, 'semibold'),
+    ],
+  };
+}
+
 function footer(ctx, s, extra) {
   const parts = [`更新 ${fmtTime(s.updatedAt)}`];
   if (s.mode === 'stale') parts.push('缓存数据');
@@ -379,7 +394,7 @@ function formatPct(val) {
   return String(rounded).padStart(2, ' ') + '%';
 }
 
-/* ---------- 小号（中心圆环 + 双排精准对齐百分比） ---------- */
+/* ---------- 小号（居中圆环 + 双排精准对齐百分比） ---------- */
 
 function smallWidget(ctx, s) {
   const d = s.data;
@@ -393,8 +408,9 @@ function smallWidget(ctx, s) {
   return {
     type: 'widget', padding: 12, gap: 4, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
-      header(s),
+      smallHeader(s),
       { type: 'spacer' },
+      // 绝对居中的圆环容器
       {
         type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'center',
         children: [
@@ -402,25 +418,46 @@ function smallWidget(ctx, s) {
         ]
       },
       { type: 'spacer' },
+      // 双排左右对齐：确保标签与百分比严格对齐
       {
         type: 'stack', direction: 'column', alignItems: 'center', gap: 3,
         children: [
           {
-            type: 'stack', direction: 'row', alignItems: 'center', gap: 0,
+            type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'space-between', width: 142,
             children: [
-              T('CPU ', 10, C.cpu, 'semibold'),
-              M(' ' + formatPct(d.cpuPct), 10, C.cpu, 'bold'),
-              T('    MEM ', 10, C.mem, 'semibold'),
-              M(' ' + formatPct(d.memPct), 10, C.mem, 'bold'),
+              {
+                type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
+                children: [
+                  T('CPU', 10, C.cpu, 'semibold'),
+                  M(formatPct(d.cpuPct), 10, C.cpu, 'bold')
+                ]
+              },
+              {
+                type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
+                children: [
+                  T('MEM', 10, C.mem, 'semibold'),
+                  M(formatPct(d.memPct), 10, C.mem, 'bold')
+                ]
+              }
             ]
           },
           {
-            type: 'stack', direction: 'row', alignItems: 'center', gap: 0,
+            type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'space-between', width: 142,
             children: [
-              T('DSK ', 10, C.disk, 'semibold'),
-              M(' ' + formatPct(d.diskPct), 10, C.disk, 'bold'),
-              T('   TRAF ', 10, tColor, 'semibold'),
-              M(' ' + formatPct(d.tfPct), 10, tColor, 'bold'),
+              {
+                type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
+                children: [
+                  T('DSK', 10, C.disk, 'semibold'),
+                  M(formatPct(d.diskPct), 10, C.disk, 'bold')
+                ]
+              },
+              {
+                type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
+                children: [
+                  T('TRAF', 10, tColor, 'semibold'),
+                  M(formatPct(d.tfPct), 10, tColor, 'bold')
+                ]
+              }
             ]
           },
         ]
