@@ -1,25 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃统一版 v1
- * UI 与「订阅流量监控 Hark 改版」统一风格
- *
- * 功能：
- *   - SSH 直连采集 CPU / 内存 / 磁盘 / 流量 / 负载 / 运行时长
- *   - vnstat 按月流量统计（自动检测，未安装回退月差值模式）
- *   - 本地缓存：连接失败时显示上次成功数据并标注「缓存」
- *   - 本地 SVG 圆环 / 仪表 / 进度条，无外部依赖
- *   - 支持小 / 中 / 大组件与锁屏组件
- *
- * Env：
- *   SERVER_HOST（必填）  服务器 IP 或域名（IPv4/IPv6 均可）
- *   SERVER_PORT          SSH 端口，默认 22
- *   SERVER_USER          SSH 用户名，默认 root
- *   SERVER_PASSWORD      SSH 密码（与 SERVER_KEY 二选一，私钥优先）
- *   SERVER_KEY           SSH 私钥（RSA / Ed25519，支持完整格式或纯 Base64）
- *   WIDGET_NAME          显示名称，留空用服务器 hostname
- *   MASK_IP              IP 打码，默认 true（123.45.*.* / 2001:db8:****:****）
- *   TRAFFIC_LIMIT        月流量限额 GB，默认 2000
- *   RESET_DAY            流量重置日（1~31），需与 vnstat MonthRotate 一致
- *   REFRESH_MINUTES      刷新间隔（分钟，5~120），默认 15
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2
+ * 统一风格：左侧多层同心圆环（仿 Apple 运动健身），右侧彩色图例与数据
  */
 
 // ---------------------------------------------------------------------------
@@ -120,7 +101,7 @@ function parseMetrics(ctx, cfg, p, key) {
   const upMins = Math.floor((upSec % 3600) / 60);
   const uptime = upDays > 0 ? `${upDays}天 ${upHours}小时` : `${upHours}小时 ${upMins}分`;
 
-  // CPU：与上次采样做差值
+  // CPU 差值计算
   const cpuNums = (p[3] || '').replace(/^cpu\s+/, '').split(/\s+/).map(Number);
   const cpuTotal = cpuNums.reduce((a, b) => a + b, 0);
   const cpuIdle = cpuNums[3] || 0;
@@ -147,7 +128,7 @@ function parseMetrics(ctx, cfg, p, key) {
   const nn = (p[7] || '0 0').split(' ');
   const netRx = Number(nn[0]) || 0, netTx = Number(nn[1]) || 0;
 
-  // 流量：优先 vnstat（按月），回退月差值模式
+  // 流量统计
   let tfRx = 0, tfTx = 0, tfSource = '月差值';
   if (p[8]) {
     try {
@@ -192,7 +173,6 @@ function parseMetrics(ctx, cfg, p, key) {
   };
 }
 
-// 加载 + 缓存：成功存 live，失败回退 stale，无缓存报 error
 async function loadServer(ctx, cfg) {
   const key = storageKey(cfg.host);
   try {
@@ -213,7 +193,7 @@ async function loadServer(ctx, cfg) {
 }
 
 // ---------------------------------------------------------------------------
-// 计算
+// 计算与样式
 // ---------------------------------------------------------------------------
 
 function fmtBytes(bytes, decimals = 1) {
@@ -263,10 +243,6 @@ function refreshAt(ctx) {
   return new Date(Date.now() + m * 60000).toISOString();
 }
 
-// ---------------------------------------------------------------------------
-// 视觉：iOS 液态玻璃（与订阅流量监控统一）
-// ---------------------------------------------------------------------------
-
 const C = {
   text: { light: '#000000', dark: '#FFFFFF' },
   dim:  { light: '#3C3C4399', dark: '#EBEBF599' },
@@ -298,7 +274,6 @@ function ringsSvg(values, size, stroke, gap) {
   values.forEach((v, i) => {
     const r = h - stroke / 2 - i * (stroke + gap);
     if (r <= stroke / 2) return;
-    const c = 2 * Math.PI * r;
     const p = Math.max(0, Math.min(1, Number(v.pct) || 0));
     body += `<circle cx='${h}' cy='${h}' r='${r.toFixed(2)}' fill='none' stroke='${v.color}' stroke-opacity='0.22' stroke-width='${stroke}'/>`;
     if (p > 0) {
@@ -335,7 +310,6 @@ function T(value, size, color, weight = 'regular', extra = {}) {
   return { type: 'text', text: String(value), font: { size, weight }, textColor: color || C.text, maxLines: 1, minScale: 0.6, ...extra };
 }
 
-// 等宽数字
 function M(value, size, color, weight = 'medium', extra = {}) {
   return T(value, size, color, weight, { font: { size, weight, family: 'Menlo' }, ...extra });
 }
@@ -353,7 +327,7 @@ function glass(children, extra = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// 布局
+// 布局组件
 // ---------------------------------------------------------------------------
 
 function header(s) {
@@ -385,7 +359,6 @@ function footer(ctx, s, extra) {
   };
 }
 
-// 指标行：图标 + 名称 + 百分比 + 数值 + 进度条
 function metricRow(ic, label, pct, color, valueText, o = {}) {
   const barW = o.barW || 150, barH = o.barH || 5;
   return {
@@ -402,6 +375,20 @@ function metricRow(ic, label, pct, color, valueText, o = {}) {
         ],
       },
       { type: 'image', src: barSvg(pct / 100, color, barW, barH), width: barW, height: barH },
+    ],
+  };
+}
+
+// 中号专属：右侧圆环图例行（文字 + 数值 + 对应颜色百分比）
+function ringLegendRow(ic, label, pct, color, valueText) {
+  return {
+    type: 'stack', direction: 'row', alignItems: 'center', gap: 5,
+    children: [
+      icon(ic, color, 10),
+      T(label, 10, color, 'semibold'),
+      { type: 'spacer' },
+      M(valueText, 9, C.dim, 'medium'),
+      M(`${Math.round(pct)}%`, 10, color, 'bold'),
     ],
   };
 }
@@ -425,12 +412,22 @@ function smallWidget(ctx, s) {
   };
 }
 
-/* ---------- 中号 ---------- */
+/* ---------- 中号（已改造为 Apple 健身同心圆风格） ---------- */
 
 function mediumWidget(ctx, s) {
   const d = s.data;
   const r = nextReset(ctx.env?.RESET_DAY || 1);
   const st = statusOf(s);
+  const tColor = trafficColor(d.tfPct);
+
+  // 构造 Apple 健身风格的 4 层同心圆数据（由外向内或由内向外）
+  const ringValues = [
+    { pct: d.cpuPct / 100, color: C.cpu },
+    { pct: d.memPct / 100, color: C.mem },
+    { pct: d.diskPct / 100, color: C.disk },
+    { pct: d.tfPct / 100, color: tColor },
+  ];
+
   return {
     type: 'widget', padding: [12, 14], gap: 12, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
@@ -438,27 +435,30 @@ function mediumWidget(ctx, s) {
       {
         type: 'stack', direction: 'row', alignItems: 'center', gap: 12, flex: 1,
         children: [
+          // 左侧：Apple 风格同心圆环
           {
-            type: 'stack', direction: 'column', alignItems: 'center', gap: 2, width: 86,
+            type: 'stack', direction: 'column', alignItems: 'center', gap: 3, width: 88,
             children: [
-              { type: 'image', src: ringsSvg([{ pct: d.cpuPct / 100, color: C.cpu }], 120, 14, 0), width: 74, height: 74 },
-              M(`CPU ${d.cpuPct}%`, 12, C.cpu, 'bold'),
-              T(`${d.cores}C · 负载 ${d.load[0]}`, 9, C.dim),
+              { type: 'image', src: ringsSvg(ringValues, 120, 8, 2), width: 76, height: 76 },
+              M(d.ip, 9, C.dim, 'bold'),
+              T(`负载 ${d.load[0]}`, 9, C.dim),
             ],
           },
+          // 右侧：分类文字图例 + 对应色彩百分比
           glass([
             {
               type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
               children: [
                 icon('network', C.dim, 10),
-                M(d.ip, 10, C.text, 'bold'),
+                M(d.hostname, 10, C.text, 'bold'),
                 { type: 'spacer' },
                 T(st.label, 9, st.color, 'semibold'),
               ],
             },
-            metricRow('memorychip', 'MEM', d.memPct, C.mem, `${fmtBytes(d.memUsed)} / ${fmtBytes(d.memTotal)}`, { barW: 175 }),
-            metricRow('internaldrive', 'DSK', d.diskPct, C.disk, `${fmtBytes(d.diskUsed)} / ${fmtBytes(d.diskTotal)}`, { barW: 175 }),
-            metricRow('antenna.radiowaves.left.and.right', 'TRAF', d.tfPct, trafficColor(d.tfPct), `↓${fmtBytes(d.tfRx)} ↑${fmtBytes(d.tfTx)}`, { barW: 175 }),
+            ringLegendRow('cpu', 'CPU', d.cpuPct, C.cpu, `${d.cores}C`),
+            ringLegendRow('memorychip', 'MEM', d.memPct, C.mem, `${fmtBytes(d.memUsed)}`),
+            ringLegendRow('internaldrive', 'DSK', d.diskPct, C.disk, `${fmtBytes(d.diskUsed)}`),
+            ringLegendRow('antenna.radiowaves.left.and.right', 'TRAF', d.tfPct, tColor, `${fmtBytes(d.tfUsed)}`),
           ], { flex: 1, gap: 5, padding: [10, 12] }),
         ],
       },
@@ -577,8 +577,6 @@ function lockWidget(ctx, s, family) {
     ],
   };
 }
-
-/* ---------- 空 / 错误 ---------- */
 
 function emptyWidget(ctx, message, sub) {
   return {
