@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2
- * 统一风格：左侧多层同心圆环（仿 Apple 运动健身），右侧彩色图例与数据
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.2
+ * 优化：状态移至右上角运行时间前，小号小组件改为中心圆环 + 双排精准对齐百分比
  */
 
 // ---------------------------------------------------------------------------
@@ -339,6 +339,8 @@ function header(s) {
       T(s.name, 13, C.text, 'semibold'),
       { type: 'spacer' },
       dot(st.color),
+      T(st.label, 10, st.color, 'semibold'),
+      T('·', 10, C.dim),
       T(s.data ? s.data.uptime : st.label, 10, C.dim),
     ],
   };
@@ -359,68 +361,82 @@ function footer(ctx, s, extra) {
   };
 }
 
-function metricRow(ic, label, pct, color, valueText, o = {}) {
-  const barW = o.barW || 150, barH = o.barH || 5;
-  return {
-    type: 'stack', direction: 'column', alignItems: 'start', gap: 3,
-    children: [
-      {
-        type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
-        children: [
-          icon(ic, color, o.iconSize || 11),
-          T(label, o.labelSize || 11, C.text, 'semibold'),
-          M(`${Math.round(pct)}%`, o.pctSize || 11, color, 'bold'),
-          { type: 'spacer' },
-          M(valueText, o.valueSize || 10, C.dim, 'medium'),
-        ],
-      },
-      { type: 'image', src: barSvg(pct / 100, color, barW, barH), width: barW, height: barH },
-    ],
-  };
-}
-
-// 中号专属：右侧圆环图例行（文字 + 数值 + 对应颜色百分比）
 function ringLegendRow(ic, label, pct, color, valueText) {
   return {
-    type: 'stack', direction: 'row', alignItems: 'center', gap: 5,
+    type: 'stack', direction: 'row', alignItems: 'center', gap: 6,
     children: [
-      icon(ic, color, 10),
-      T(label, 10, color, 'semibold'),
+      icon(ic, color, 11),
+      T(label, 11, color, 'semibold'),
       { type: 'spacer' },
-      M(valueText, 9, C.dim, 'medium'),
-      M(`${Math.round(pct)}%`, 10, color, 'bold'),
+      M(valueText, 10, C.dim, 'medium'),
+      M(`${Math.round(pct)}%`, 11, color, 'bold'),
     ],
   };
 }
 
-/* ---------- 小号 ---------- */
+function formatPct(val) {
+  const rounded = Math.round(Number(val) || 0);
+  return String(rounded).padStart(2, ' ') + '%';
+}
+
+/* ---------- 小号（中心圆环 + 双排精准对齐百分比） ---------- */
 
 function smallWidget(ctx, s) {
   const d = s.data;
+  const tColor = trafficColor(d.tfPct);
+  const ringValues = [
+    { pct: d.cpuPct / 100, color: C.cpu },
+    { pct: d.memPct / 100, color: C.mem },
+    { pct: d.diskPct / 100, color: C.disk },
+    { pct: d.tfPct / 100, color: tColor },
+  ];
   return {
-    type: 'widget', padding: 14, gap: 6, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
+    type: 'widget', padding: 12, gap: 4, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
       header(s),
-      M(d.ip, 9, C.dim, 'bold'),
       { type: 'spacer' },
-      metricRow('cpu', 'CPU', d.cpuPct, C.cpu, `${d.cores}C · ${d.load[0]}`, { barW: 150 }),
-      metricRow('memorychip', 'MEM', d.memPct, C.mem, `${fmtBytes(d.memUsed)}/${fmtBytes(d.memTotal)}`, { barW: 150 }),
-      metricRow('antenna.radiowaves.left.and.right', 'TRAF', d.tfPct, trafficColor(d.tfPct), `${fmtBytes(d.tfUsed)}/${fmtBytes(d.tfTotal)}`, { barW: 150 }),
+      {
+        type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'center',
+        children: [
+          { type: 'image', src: ringsSvg(ringValues, 104, 8, 2), width: 72, height: 72 }
+        ]
+      },
       { type: 'spacer' },
-      footer(ctx, s),
+      {
+        type: 'stack', direction: 'column', alignItems: 'center', gap: 3,
+        children: [
+          {
+            type: 'stack', direction: 'row', alignItems: 'center', gap: 0,
+            children: [
+              T('CPU ', 10, C.cpu, 'semibold'),
+              M(' ' + formatPct(d.cpuPct), 10, C.cpu, 'bold'),
+              T('    MEM ', 10, C.mem, 'semibold'),
+              M(' ' + formatPct(d.memPct), 10, C.mem, 'bold'),
+            ]
+          },
+          {
+            type: 'stack', direction: 'row', alignItems: 'center', gap: 0,
+            children: [
+              T('DSK ', 10, C.disk, 'semibold'),
+              M(' ' + formatPct(d.diskPct), 10, C.disk, 'bold'),
+              T('   TRAF ', 10, tColor, 'semibold'),
+              M(' ' + formatPct(d.tfPct), 10, tColor, 'bold'),
+            ]
+          },
+        ]
+      },
+      { type: 'spacer' },
     ],
   };
 }
 
-/* ---------- 中号（已改造为 Apple 健身同心圆风格） ---------- */
+/* ---------- 中号 ---------- */
 
 function mediumWidget(ctx, s) {
   const d = s.data;
   const r = nextReset(ctx.env?.RESET_DAY || 1);
-  const st = statusOf(s);
   const tColor = trafficColor(d.tfPct);
 
-  // 构造 Apple 健身风格的 4 层同心圆数据（由外向内或由内向外）
   const ringValues = [
     { pct: d.cpuPct / 100, color: C.cpu },
     { pct: d.memPct / 100, color: C.mem },
@@ -435,7 +451,6 @@ function mediumWidget(ctx, s) {
       {
         type: 'stack', direction: 'row', alignItems: 'center', gap: 12, flex: 1,
         children: [
-          // 左侧：Apple 风格同心圆环
           {
             type: 'stack', direction: 'column', alignItems: 'center', gap: 3, width: 88,
             children: [
@@ -444,22 +459,12 @@ function mediumWidget(ctx, s) {
               T(`负载 ${d.load[0]}`, 9, C.dim),
             ],
           },
-          // 右侧：分类文字图例 + 对应色彩百分比
           glass([
-            {
-              type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
-              children: [
-                icon('network', C.dim, 10),
-                M(d.hostname, 10, C.text, 'bold'),
-                { type: 'spacer' },
-                T(st.label, 9, st.color, 'semibold'),
-              ],
-            },
             ringLegendRow('cpu', 'CPU', d.cpuPct, C.cpu, `${d.cores}C`),
             ringLegendRow('memorychip', 'MEM', d.memPct, C.mem, `${fmtBytes(d.memUsed)}`),
             ringLegendRow('internaldrive', 'DSK', d.diskPct, C.disk, `${fmtBytes(d.diskUsed)}`),
             ringLegendRow('antenna.radiowaves.left.and.right', 'TRAF', d.tfPct, tColor, `${fmtBytes(d.tfUsed)}`),
-          ], { flex: 1, gap: 5, padding: [10, 12] }),
+          ], { flex: 1, gap: 6, padding: [12, 12] }),
         ],
       },
       footer(ctx, s, r ? (r.days === 0 ? '今日重置' : `重置 ${r.days} 天`) : null),
