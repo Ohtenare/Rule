@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.1
- * 优化：小号组件放弃圆环，全面改为 4 项横向进度条（CPU/MEM/DISK/TRAF），底部集成系统负载
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.2
+ * 优化：中号组件圆环下方负载改为完整三项 (0.00 / 0.00 / 0.00) 并去除“负载”前缀
  */
 
 // ---------------------------------------------------------------------------
@@ -375,6 +375,19 @@ function footer(ctx, s, extra) {
   };
 }
 
+function ringLegendRow(ic, label, pct, color, valueText) {
+  return {
+    type: 'stack', direction: 'row', alignItems: 'center', gap: 6,
+    children: [
+      icon(ic, color, 11),
+      T(label, 11, color, 'semibold'),
+      { type: 'spacer' },
+      M(valueText, 10, C.dim, 'medium'),
+      M(`${Math.round(pct)}%`, 11, color, 'bold'),
+    ],
+  };
+}
+
 function metricRow(ic, label, pct, color, valueText, o = {}) {
   const barW = o.barW || 145, barH = o.barH || 4;
   return {
@@ -394,7 +407,7 @@ function metricRow(ic, label, pct, color, valueText, o = {}) {
   };
 }
 
-/* ---------- 小号组件（全面采用进度条风格 + 底部系统负载） ---------- */
+/* ---------- 小号组件 ---------- */
 
 function smallWidget(ctx, s) {
   const d = s.data;
@@ -409,7 +422,6 @@ function smallWidget(ctx, s) {
       metricRow('internaldrive', 'DSK', d.diskPct, C.disk, `${fmtBytes(d.diskUsed)}/${fmtBytes(d.diskTotal)}`, { barW: 145, barH: 4 }),
       metricRow('antenna.radiowaves.left.and.right', 'TRAF', d.tfPct, tColor, `${fmtBytes(d.tfUsed)} / ${fmtBytes(d.tfTotal)}`, { barW: 145, barH: 4 }),
       { type: 'spacer' },
-      // 底部系统负载
       {
         type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
         children: [
@@ -447,7 +459,8 @@ function mediumWidget(ctx, s) {
             children: [
               { type: 'image', src: ringsSvg(ringValues, 120, 8, 2), width: 76, height: 76 },
               M(d.ip, 9, C.dim, 'bold'),
-              T(`负载 ${d.load[0]}`, 9, C.dim),
+              // 调整为完整三项，且取消了“负载”前缀
+              T(d.load.join(' / '), 9, C.dim, 'regular', { minScale: 0.5 }),
             ],
           },
           glass([
