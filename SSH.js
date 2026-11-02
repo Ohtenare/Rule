@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.7
- * 修复：小号组件圆环未居中问题，优化底部流量条布局
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.8
+ * 优化：小号组件改用左右分栏设计（左侧 3 层圆环，右侧 CPU/MEM/DISK 百分比），无底部留白
  */
 
 // ---------------------------------------------------------------------------
@@ -388,42 +388,45 @@ function ringLegendRow(ic, label, pct, color, valueText) {
   };
 }
 
-/* ---------- 小号（中心 3 层同心圆全宽居中 + 底部流量长条） ---------- */
+function smallMetricRow(label, pct, color) {
+  return {
+    type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%',
+    children: [
+      T(label, 10, color, 'semibold'),
+      M(`${Math.round(pct)}%`, 10, color, 'bold'),
+    ],
+  };
+}
+
+/* ---------- 小号（方案三：左侧 3 层圆环，右侧 CPU / MEM / DSK 百分比列表） ---------- */
 
 function smallWidget(ctx, s) {
   const d = s.data;
-  const tColor = trafficColor(d.tfPct);
   const ringValues = [
     { pct: d.cpuPct / 100, color: C.cpu },
     { pct: d.memPct / 100, color: C.mem },
     { pct: d.diskPct / 100, color: C.disk },
   ];
   return {
-    type: 'widget', padding: 12, gap: 4, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
+    type: 'widget', padding: 12, gap: 6, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
       smallHeader(s),
-      { type: 'spacer' },
-      // 关键修复：加入 width: '100%' 确保水平居中生效
       {
-        type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'center', width: '100%',
+        type: 'stack', direction: 'row', alignItems: 'center', gap: 10, flex: 1,
         children: [
-          { type: 'image', src: ringsSvg(ringValues, 110, 9, 2), width: 76, height: 76 }
-        ]
-      },
-      { type: 'spacer' },
-      // 底部流量进度条容器占满全宽
-      {
-        type: 'stack', direction: 'column', alignItems: 'stretch', gap: 3, width: '100%',
-        children: [
+          // 左侧：3 层同心圆环
           {
-            type: 'stack', direction: 'row', alignItems: 'center', width: '100%',
+            type: 'stack', direction: 'column', alignItems: 'center', justifyContent: 'center', width: 78,
             children: [
-              T('TRAF', 9, tColor, 'semibold'),
-              { type: 'spacer' },
-              M(`${fmtBytes(d.tfUsed)} / ${fmtBytes(d.tfTotal)} (${Math.round(d.tfPct)}%)`, 9, C.dim, 'medium'),
+              { type: 'image', src: ringsSvg(ringValues, 98, 8, 2), width: 72, height: 72 }
             ],
           },
-          { type: 'image', src: barSvg(d.tfPct / 100, tColor, 148, 5), width: 148, height: 5 },
+          // 右侧：CPU / MEM / DSK 竖向百分比卡片
+          glass([
+            smallMetricRow('CPU', d.cpuPct, C.cpu),
+            smallMetricRow('MEM', d.memPct, C.mem),
+            smallMetricRow('DSK', d.diskPct, C.disk),
+          ], { flex: 1, gap: 6, padding: [10, 10], borderRadius: 14, justifyContent: 'center' }),
         ],
       },
     ],
