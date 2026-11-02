@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.9
- * 优化：小号组件左侧 4 层圆环（含 TRAF），右侧 2x2 换行百分比卡片，右上角仅留状态
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.0
+ * 参考 Hark 订阅流量组件风格布局：小号组件右侧 2x2 换行百分比，左侧 4 层同心圆环
  */
 
 // ---------------------------------------------------------------------------
@@ -193,7 +193,7 @@ async function loadServer(ctx, cfg) {
 }
 
 // ---------------------------------------------------------------------------
-// 计算与样式
+// 计算与 SVG 绘图
 // ---------------------------------------------------------------------------
 
 function fmtBytes(bytes, decimals = 1) {
@@ -268,6 +268,7 @@ function bg() {
 
 function svgUri(svg) { return 'data:image/svg+xml,' + encodeURIComponent(svg); }
 
+// 本地 SVG 画多层同心圆环
 function ringsSvg(values, size, stroke, gap) {
   const h = size / 2;
   let body = '';
@@ -388,11 +389,12 @@ function ringLegendRow(ic, label, pct, color, valueText) {
   };
 }
 
-/* ---------- 小号（左侧 4 层圆环，右侧 2x2 换行百分比卡片） ---------- */
+/* ---------- 小号组件（左侧 4 层圆环，右侧 2x2 换行百分比） ---------- */
 
 function smallWidget(ctx, s) {
   const d = s.data;
   const tColor = trafficColor(d.tfPct);
+  // 包含 4 层同心圆环：CPU、MEM、DISK、TRAF
   const ringValues = [
     { pct: d.cpuPct / 100, color: C.cpu },
     { pct: d.memPct / 100, color: C.mem },
@@ -400,7 +402,7 @@ function smallWidget(ctx, s) {
     { pct: d.tfPct / 100, color: tColor },
   ];
 
-  // 辅助函数：名称在上，百分比在下（换行显示）
+  // 第一行为名称，换行为百分比
   function stackedMetric(label, pct, color) {
     return {
       type: 'stack', direction: 'column', alignItems: 'start', gap: 1,
@@ -418,14 +420,14 @@ function smallWidget(ctx, s) {
       {
         type: 'stack', direction: 'row', alignItems: 'center', gap: 8, flex: 1,
         children: [
-          // 左侧：4 层同心圆环
+          // 左侧：4 层 SVG 同心圆环
           {
             type: 'stack', direction: 'column', alignItems: 'center', justifyContent: 'center', width: 76,
             children: [
               { type: 'image', src: ringsSvg(ringValues, 94, 6, 2), width: 72, height: 72 }
             ],
           },
-          // 右侧：2x2 换行百分比卡片
+          // 右侧：2x2 换行显示百分比卡片
           glass([
             {
               type: 'stack', direction: 'row', justifyContent: 'space-between', width: '100%',
