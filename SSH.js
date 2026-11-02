@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.3
- * 修复：小号圆环居中、小号头部精简（仅留状态）、MEM/TRAF 首字母与百分比完美对齐
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.4
+ * 优化：小号采用左右分栏布局，左侧圆环下方显示运行时间，右侧铺满 4 行核心指标
  */
 
 // ---------------------------------------------------------------------------
@@ -346,7 +346,6 @@ function header(s) {
   };
 }
 
-// 小号组件专属精简头部：只保留名字和状态，空间更宽裕
 function smallHeader(s) {
   const st = statusOf(s);
   return {
@@ -394,7 +393,17 @@ function formatPct(val) {
   return String(rounded).padStart(2, ' ') + '%';
 }
 
-/* ---------- 小号（居中圆环 + 双排精准对齐百分比） ---------- */
+function smallMetricRow(label, pct, color) {
+  return {
+    type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%',
+    children: [
+      T(label, 10, color, 'semibold'),
+      M(formatPct(pct), 10, color, 'bold'),
+    ],
+  };
+}
+
+/* ---------- 小号（方案一：左侧圆环+运行时间，右侧 4 行满载指标） ---------- */
 
 function smallWidget(ctx, s) {
   const d = s.data;
@@ -406,63 +415,29 @@ function smallWidget(ctx, s) {
     { pct: d.tfPct / 100, color: tColor },
   ];
   return {
-    type: 'widget', padding: 12, gap: 4, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
+    type: 'widget', padding: 12, gap: 6, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
       smallHeader(s),
-      { type: 'spacer' },
-      // 绝对居中的圆环容器
       {
-        type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'center',
+        type: 'stack', direction: 'row', alignItems: 'center', gap: 10, flex: 1,
         children: [
-          { type: 'image', src: ringsSvg(ringValues, 104, 8, 2), width: 72, height: 72 }
-        ]
-      },
-      { type: 'spacer' },
-      // 双排左右对齐：确保标签与百分比严格对齐
-      {
-        type: 'stack', direction: 'column', alignItems: 'center', gap: 3,
-        children: [
+          // 左侧：圆环 + 底部运行时间
           {
-            type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'space-between', width: 142,
+            type: 'stack', direction: 'column', alignItems: 'center', gap: 3, width: 72,
             children: [
-              {
-                type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
-                children: [
-                  T('CPU', 10, C.cpu, 'semibold'),
-                  M(formatPct(d.cpuPct), 10, C.cpu, 'bold')
-                ]
-              },
-              {
-                type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
-                children: [
-                  T('MEM', 10, C.mem, 'semibold'),
-                  M(formatPct(d.memPct), 10, C.mem, 'bold')
-                ]
-              }
-            ]
+              { type: 'image', src: ringsSvg(ringValues, 92, 7, 2), width: 64, height: 64 },
+              T(d.uptime, 9, C.dim, 'semibold', { minScale: 0.6 }),
+            ],
           },
-          {
-            type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'space-between', width: 142,
-            children: [
-              {
-                type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
-                children: [
-                  T('DSK', 10, C.disk, 'semibold'),
-                  M(formatPct(d.diskPct), 10, C.disk, 'bold')
-                ]
-              },
-              {
-                type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
-                children: [
-                  T('TRAF', 10, tColor, 'semibold'),
-                  M(formatPct(d.tfPct), 10, tColor, 'bold')
-                ]
-              }
-            ]
-          },
-        ]
+          // 右侧：4 行核心指标玻璃卡片
+          glass([
+            smallMetricRow('CPU', d.cpuPct, C.cpu),
+            smallMetricRow('MEM', d.memPct, C.mem),
+            smallMetricRow('DSK', d.diskPct, C.disk),
+            smallMetricRow('TRAF', d.tfPct, tColor),
+          ], { flex: 1, gap: 4, padding: [8, 10], borderRadius: 14 }),
+        ],
       },
-      { type: 'spacer' },
     ],
   };
 }
