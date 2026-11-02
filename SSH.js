@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.5
- * 优化：大号组件底部去除重复的运行时长，仅保留 IP 地址与系统负载
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.6
+ * 优化：小号组件重新设计，圆环展示 CPU/MEM/DISK 三层，底部放置原始流量长条，右上角仅显状态
  */
 
 // ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ function maskIP(ip, enabled) {
   if (!ip || !enabled) return ip;
   if (ip.includes('.')) {
     const parts = ip.split('.');
-    if (parts.length === 4) return `${parts[0]}.${parts[1]}.*.*`;
+    if (parts.length === 4) return `${parts[0]}.${parts[1]}.${parts[2]}.***`;
   } else if (ip.includes(':')) {
     const parts = ip.split(':');
     if (parts.length > 2) return `${parts[0]}:${parts[1]}:****:****`;
@@ -346,6 +346,7 @@ function header(s) {
   };
 }
 
+// 小号组件专属头部：只显示名称和右上角状态
 function smallHeader(s) {
   const st = statusOf(s);
   return {
@@ -375,52 +376,56 @@ function footer(ctx, s, extra) {
   };
 }
 
-function formatPct(val) {
-  const rounded = Math.round(Number(val) || 0);
-  return String(rounded).padStart(2, ' ') + '%';
-}
-
-function smallMetricRow(label, pct, color) {
+function ringLegendRow(ic, label, pct, color, valueText) {
   return {
-    type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%',
+    type: 'stack', direction: 'row', alignItems: 'center', gap: 6,
     children: [
-      T(label, 10, color, 'semibold'),
-      M(formatPct(pct), 10, color, 'bold'),
+      icon(ic, color, 11),
+      T(label, 11, color, 'semibold'),
+      { type: 'spacer' },
+      M(valueText, 10, C.dim, 'medium'),
+      M(`${Math.round(pct)}%`, 11, color, 'bold'),
     ],
   };
 }
 
-/* ---------- 小号（方案一：左侧圆环+运行时间，右侧 4 行满载指标） ---------- */
+/* ---------- 小号（中心 3 层圆环 CPU/MEM/DISK + 底部原始流量长条） ---------- */
 
 function smallWidget(ctx, s) {
   const d = s.data;
   const tColor = trafficColor(d.tfPct);
+  // 只保留 CPU、MEM、DISK 三层圆环
   const ringValues = [
     { pct: d.cpuPct / 100, color: C.cpu },
     { pct: d.memPct / 100, color: C.mem },
     { pct: d.diskPct / 100, color: C.disk },
-    { pct: d.tfPct / 100, color: tColor },
   ];
   return {
-    type: 'widget', padding: 12, gap: 6, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
+    type: 'widget', padding: 12, gap: 4, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
       smallHeader(s),
+      { type: 'spacer' },
+      // 居中展示 3 层同心圆环
       {
-        type: 'stack', direction: 'row', alignItems: 'center', gap: 10, flex: 1,
+        type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'center',
+        children: [
+          { type: 'image', src: ringsSvg(ringValues, 110, 9, 2), width: 76, height: 76 }
+        ]
+      },
+      { type: 'spacer' },
+      // 底部：TRAF 原始流量长条进度及简要文字
+      {
+        type: 'stack', direction: 'column', alignItems: 'start', gap: 3, padding: [0, 4],
         children: [
           {
-            type: 'stack', direction: 'column', alignItems: 'center', gap: 3, width: 72,
+            type: 'stack', direction: 'row', alignItems: 'center',
             children: [
-              { type: 'image', src: ringsSvg(ringValues, 92, 7, 2), width: 64, height: 64 },
-              T(d.uptime, 9, C.dim, 'semibold', { minScale: 0.6 }),
+              T('TRAF', 9, tColor, 'semibold'),
+              { type: 'spacer' },
+              M(`${fmtBytes(d.tfUsed)} / ${fmtBytes(d.tfTotal)} (${Math.round(d.tfPct)}%)`, 9, C.dim, 'medium'),
             ],
           },
-          glass([
-            smallMetricRow('CPU', d.cpuPct, C.cpu),
-            smallMetricRow('MEM', d.memPct, C.mem),
-            smallMetricRow('DSK', d.diskPct, C.disk),
-            smallMetricRow('TRAF', d.tfPct, tColor),
-          ], { flex: 1, gap: 4, padding: [8, 10], borderRadius: 14 }),
+          { type: 'image', src: barSvg(d.tfPct / 100, tColor, 148, 5), width: 148, height: 5 },
         ],
       },
     ],
@@ -469,7 +474,7 @@ function mediumWidget(ctx, s) {
   };
 }
 
-/* ---------- 大号（已移除底部的运行时长） ---------- */
+/* ---------- 大号 ---------- */
 
 function gaugeCell(ic, label, pct, color, sub) {
   return glass([
@@ -530,7 +535,6 @@ function largeWidget(ctx, s) {
         },
         { type: 'image', src: barSvg(d.tfPct / 100, tColor, 300, 6), width: 300, height: 6 },
       ], { gap: 6, padding: [9, 12], borderRadius: 16 }),
-      // 底部仅保留 IP 地址与系统负载两个卡片，自动平分空间
       {
         type: 'stack', direction: 'row', gap: 8,
         children: [
@@ -599,7 +603,7 @@ function emptyWidget(ctx, message, sub) {
 export default async function (ctx) {
   const cfg = readConfig(ctx);
   const family = ctx.widgetFamily || 'systemMedium';
-  if (!cfg.host) return emptyWidget(ctx, '等待服务器配置', '在 Env 里填 SERVER_HOST，以及 SERVER_PASSWORD 或 SERVER_KEY');
+  if (!cfg.host) return emptyWidget(ctx, '等待服务器配置', 'In Env 里填 SERVER_HOST，以及 SERVER_PASSWORD 或 SERVER_KEY');
   const s = await loadServer(ctx, cfg);
   if (family.startsWith('accessory')) return lockWidget(ctx, s, family);
   if (!s.data) return emptyWidget(ctx, '无法连接服务器', s.error || '请检查网络与 SSH 配置');
