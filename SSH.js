@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.0
- * 参考 Hark 订阅流量组件风格布局：小号组件右侧 2x2 换行百分比，左侧 4 层同心圆环
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.1
+ * 优化：小号组件放弃圆环，全面改为 4 项横向进度条（CPU/MEM/DISK/TRAF），底部集成系统负载
  */
 
 // ---------------------------------------------------------------------------
@@ -268,7 +268,6 @@ function bg() {
 
 function svgUri(svg) { return 'data:image/svg+xml,' + encodeURIComponent(svg); }
 
-// 本地 SVG 画多层同心圆环
 function ringsSvg(values, size, stroke, gap) {
   const h = size / 2;
   let body = '';
@@ -376,76 +375,48 @@ function footer(ctx, s, extra) {
   };
 }
 
-function ringLegendRow(ic, label, pct, color, valueText) {
+function metricRow(ic, label, pct, color, valueText, o = {}) {
+  const barW = o.barW || 145, barH = o.barH || 4;
   return {
-    type: 'stack', direction: 'row', alignItems: 'center', gap: 6,
+    type: 'stack', direction: 'column', alignItems: 'start', gap: 2,
     children: [
-      icon(ic, color, 11),
-      T(label, 11, color, 'semibold'),
-      { type: 'spacer' },
-      M(valueText, 10, C.dim, 'medium'),
-      M(`${Math.round(pct)}%`, 11, color, 'bold'),
+      {
+        type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
+        children: [
+          icon(ic, color, 10),
+          T(label, 10, C.text, 'semibold'),
+          { type: 'spacer' },
+          M(valueText, 9, C.dim, 'medium', { minScale: 0.6 }),
+        ],
+      },
+      { type: 'image', src: barSvg(pct / 100, color, barW, barH), width: barW, height: barH },
     ],
   };
 }
 
-/* ---------- 小号组件（左侧 4 层圆环，右侧 2x2 换行百分比） ---------- */
+/* ---------- 小号组件（全面采用进度条风格 + 底部系统负载） ---------- */
 
 function smallWidget(ctx, s) {
   const d = s.data;
   const tColor = trafficColor(d.tfPct);
-  // 包含 4 层同心圆环：CPU、MEM、DISK、TRAF
-  const ringValues = [
-    { pct: d.cpuPct / 100, color: C.cpu },
-    { pct: d.memPct / 100, color: C.mem },
-    { pct: d.diskPct / 100, color: C.disk },
-    { pct: d.tfPct / 100, color: tColor },
-  ];
-
-  // 第一行为名称，换行为百分比
-  function stackedMetric(label, pct, color) {
-    return {
-      type: 'stack', direction: 'column', alignItems: 'start', gap: 1,
-      children: [
-        T(label, 9, color, 'semibold'),
-        M(`${Math.round(pct)}%`, 11, color, 'bold'),
-      ]
-    };
-  }
-
   return {
-    type: 'widget', padding: 12, gap: 6, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
+    type: 'widget', padding: 12, gap: 5, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
       smallHeader(s),
+      { type: 'spacer' },
+      metricRow('cpu', 'CPU', d.cpuPct, C.cpu, `${d.cores}C · ${d.cpuPct}%`, { barW: 145, barH: 4 }),
+      metricRow('memorychip', 'MEM', d.memPct, C.mem, `${fmtBytes(d.memUsed)}/${fmtBytes(d.memTotal)}`, { barW: 145, barH: 4 }),
+      metricRow('internaldrive', 'DSK', d.diskPct, C.disk, `${fmtBytes(d.diskUsed)}/${fmtBytes(d.diskTotal)}`, { barW: 145, barH: 4 }),
+      metricRow('antenna.radiowaves.left.and.right', 'TRAF', d.tfPct, tColor, `${fmtBytes(d.tfUsed)} / ${fmtBytes(d.tfTotal)}`, { barW: 145, barH: 4 }),
+      { type: 'spacer' },
+      // 底部系统负载
       {
-        type: 'stack', direction: 'row', alignItems: 'center', gap: 8, flex: 1,
+        type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
         children: [
-          // 左侧：4 层 SVG 同心圆环
-          {
-            type: 'stack', direction: 'column', alignItems: 'center', justifyContent: 'center', width: 76,
-            children: [
-              { type: 'image', src: ringsSvg(ringValues, 94, 6, 2), width: 72, height: 72 }
-            ],
-          },
-          // 右侧：2x2 换行显示百分比卡片
-          glass([
-            {
-              type: 'stack', direction: 'row', justifyContent: 'space-between', width: '100%',
-              children: [
-                stackedMetric('CPU', d.cpuPct, C.cpu),
-                stackedMetric('MEM', d.memPct, C.mem),
-              ]
-            },
-            {
-              type: 'stack', direction: 'row', justifyContent: 'space-between', width: '100%',
-              children: [
-                stackedMetric('DSK', d.diskPct, C.disk),
-                stackedMetric('TRAF', d.tfPct, tColor),
-              ]
-            }
-          ], { flex: 1, gap: 6, padding: [8, 10], borderRadius: 14, justifyContent: 'center' }),
-        ],
-      },
+          T('负载', 9, C.dim),
+          M(d.load.join(' / '), 9, C.text, 'medium', { minScale: 0.6 })
+        ]
+      }
     ],
   };
 }
