@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.4
- * 优化：小号采用左右分栏布局，左侧圆环下方显示运行时间，右侧铺满 4 行核心指标
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.5
+ * 优化：大号组件底部去除重复的运行时长，仅保留 IP 地址与系统负载
  */
 
 // ---------------------------------------------------------------------------
@@ -375,19 +375,6 @@ function footer(ctx, s, extra) {
   };
 }
 
-function ringLegendRow(ic, label, pct, color, valueText) {
-  return {
-    type: 'stack', direction: 'row', alignItems: 'center', gap: 6,
-    children: [
-      icon(ic, color, 11),
-      T(label, 11, color, 'semibold'),
-      { type: 'spacer' },
-      M(valueText, 10, C.dim, 'medium'),
-      M(`${Math.round(pct)}%`, 11, color, 'bold'),
-    ],
-  };
-}
-
 function formatPct(val) {
   const rounded = Math.round(Number(val) || 0);
   return String(rounded).padStart(2, ' ') + '%';
@@ -421,7 +408,6 @@ function smallWidget(ctx, s) {
       {
         type: 'stack', direction: 'row', alignItems: 'center', gap: 10, flex: 1,
         children: [
-          // 左侧：圆环 + 底部运行时间
           {
             type: 'stack', direction: 'column', alignItems: 'center', gap: 3, width: 72,
             children: [
@@ -429,7 +415,6 @@ function smallWidget(ctx, s) {
               T(d.uptime, 9, C.dim, 'semibold', { minScale: 0.6 }),
             ],
           },
-          // 右侧：4 行核心指标玻璃卡片
           glass([
             smallMetricRow('CPU', d.cpuPct, C.cpu),
             smallMetricRow('MEM', d.memPct, C.mem),
@@ -484,7 +469,7 @@ function mediumWidget(ctx, s) {
   };
 }
 
-/* ---------- 大号 ---------- */
+/* ---------- 大号（已移除底部的运行时长） ---------- */
 
 function gaugeCell(ic, label, pct, color, sub) {
   return glass([
@@ -545,10 +530,10 @@ function largeWidget(ctx, s) {
         },
         { type: 'image', src: barSvg(d.tfPct / 100, tColor, 300, 6), width: 300, height: 6 },
       ], { gap: 6, padding: [9, 12], borderRadius: 16 }),
+      // 底部仅保留 IP 地址与系统负载两个卡片，自动平分空间
       {
         type: 'stack', direction: 'row', gap: 8,
         children: [
-          infoCell('运行时长', d.uptime),
           infoCell('IP 地址', d.ip),
           infoCell('系统负载', d.load.join(' / ')),
         ],
