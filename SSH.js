@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.8
- * 优化：小号组件改用左右分栏设计（左侧 3 层圆环，右侧 CPU/MEM/DISK 百分比），无底部留白
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v2.9
+ * 优化：小号组件左侧 4 层圆环（含 TRAF），右侧 2x2 换行百分比卡片，右上角仅留状态
  */
 
 // ---------------------------------------------------------------------------
@@ -388,45 +388,60 @@ function ringLegendRow(ic, label, pct, color, valueText) {
   };
 }
 
-function smallMetricRow(label, pct, color) {
-  return {
-    type: 'stack', direction: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%',
-    children: [
-      T(label, 10, color, 'semibold'),
-      M(`${Math.round(pct)}%`, 10, color, 'bold'),
-    ],
-  };
-}
-
-/* ---------- 小号（方案三：左侧 3 层圆环，右侧 CPU / MEM / DSK 百分比列表） ---------- */
+/* ---------- 小号（左侧 4 层圆环，右侧 2x2 换行百分比卡片） ---------- */
 
 function smallWidget(ctx, s) {
   const d = s.data;
+  const tColor = trafficColor(d.tfPct);
   const ringValues = [
     { pct: d.cpuPct / 100, color: C.cpu },
     { pct: d.memPct / 100, color: C.mem },
     { pct: d.diskPct / 100, color: C.disk },
+    { pct: d.tfPct / 100, color: tColor },
   ];
+
+  // 辅助函数：名称在上，百分比在下（换行显示）
+  function stackedMetric(label, pct, color) {
+    return {
+      type: 'stack', direction: 'column', alignItems: 'start', gap: 1,
+      children: [
+        T(label, 9, color, 'semibold'),
+        M(`${Math.round(pct)}%`, 11, color, 'bold'),
+      ]
+    };
+  }
+
   return {
     type: 'widget', padding: 12, gap: 6, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
       smallHeader(s),
       {
-        type: 'stack', direction: 'row', alignItems: 'center', gap: 10, flex: 1,
+        type: 'stack', direction: 'row', alignItems: 'center', gap: 8, flex: 1,
         children: [
-          // 左侧：3 层同心圆环
+          // 左侧：4 层同心圆环
           {
-            type: 'stack', direction: 'column', alignItems: 'center', justifyContent: 'center', width: 78,
+            type: 'stack', direction: 'column', alignItems: 'center', justifyContent: 'center', width: 76,
             children: [
-              { type: 'image', src: ringsSvg(ringValues, 98, 8, 2), width: 72, height: 72 }
+              { type: 'image', src: ringsSvg(ringValues, 94, 6, 2), width: 72, height: 72 }
             ],
           },
-          // 右侧：CPU / MEM / DSK 竖向百分比卡片
+          // 右侧：2x2 换行百分比卡片
           glass([
-            smallMetricRow('CPU', d.cpuPct, C.cpu),
-            smallMetricRow('MEM', d.memPct, C.mem),
-            smallMetricRow('DSK', d.diskPct, C.disk),
-          ], { flex: 1, gap: 6, padding: [10, 10], borderRadius: 14, justifyContent: 'center' }),
+            {
+              type: 'stack', direction: 'row', justifyContent: 'space-between', width: '100%',
+              children: [
+                stackedMetric('CPU', d.cpuPct, C.cpu),
+                stackedMetric('MEM', d.memPct, C.mem),
+              ]
+            },
+            {
+              type: 'stack', direction: 'row', justifyContent: 'space-between', width: '100%',
+              children: [
+                stackedMetric('DSK', d.diskPct, C.disk),
+                stackedMetric('TRAF', d.tfPct, tColor),
+              ]
+            }
+          ], { flex: 1, gap: 6, padding: [8, 10], borderRadius: 14, justifyContent: 'center' }),
         ],
       },
     ],
