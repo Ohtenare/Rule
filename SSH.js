@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.2
- * 优化：中号组件圆环下方负载改为完整三项 (0.00 / 0.00 / 0.00) 并去除“负载”前缀
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.3
+ * 修复：圆环在 0% 或极低占用时因端点圆角重叠产生的悬浮胶囊显示 Bug
  */
 
 // ---------------------------------------------------------------------------
@@ -275,8 +275,11 @@ function ringsSvg(values, size, stroke, gap) {
     const r = h - stroke / 2 - i * (stroke + gap);
     if (r <= stroke / 2) return;
     const p = Math.max(0, Math.min(1, Number(v.pct) || 0));
+    // 渲染底层轨道
     body += `<circle cx='${h}' cy='${h}' r='${r.toFixed(2)}' fill='none' stroke='${v.color}' stroke-opacity='0.22' stroke-width='${stroke}'/>`;
-    if (p > 0) {
+    
+    // 仅当占用率大于 0.5% (p > 0.005) 时才渲染进度弧，彻底消除 0% 时的端点重叠胶囊 Bug
+    if (p > 0.005) {
       if (p >= 0.999) {
         body += `<circle cx='${h}' cy='${h}' r='${r.toFixed(2)}' fill='none' stroke='${v.color}' stroke-width='${stroke}'/>`;
       } else {
@@ -459,7 +462,6 @@ function mediumWidget(ctx, s) {
             children: [
               { type: 'image', src: ringsSvg(ringValues, 120, 8, 2), width: 76, height: 76 },
               M(d.ip, 9, C.dim, 'bold'),
-              // 调整为完整三项，且取消了“负载”前缀
               T(d.load.join(' / '), 9, C.dim, 'regular', { minScale: 0.5 }),
             ],
           },
