@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.4
- * 优化：中号组件右侧列表全面改为条状进度条（Bar）风格，保持与其他组件视觉一致
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.5
+ * 修复：移除 metricRow 中非法的 width: '100%' 字符串，解决中号组件渲染失败问题
  */
 
 // ---------------------------------------------------------------------------
@@ -378,10 +378,10 @@ function footer(ctx, s, extra) {
 function metricRow(ic, label, pct, color, valueText, o = {}) {
   const barW = o.barW || 165, barH = o.barH || 4;
   return {
-    type: 'stack', direction: 'column', alignItems: 'start', gap: 2, width: '100%',
+    type: 'stack', direction: 'column', alignItems: 'start', gap: 2,
     children: [
       {
-        type: 'stack', direction: 'row', alignItems: 'center', gap: 4, width: '100%',
+        type: 'stack', direction: 'row', alignItems: 'center', gap: 4,
         children: [
           icon(ic, color, 10),
           T(label, 10, C.text, 'semibold'),
@@ -420,7 +420,7 @@ function smallWidget(ctx, s) {
   };
 }
 
-/* ---------- 中号（右侧改为条状进度条样式） ---------- */
+/* ---------- 中号 ---------- */
 
 function mediumWidget(ctx, s) {
   const d = s.data;
