@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.6
- * 优化：中号小组件上下边缘留白与间距调整，使四角文字向外扩展，释放中间显示空间
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.7
+ * 优化：微调中号组件上下边距与间距，使底部文字进一步向下延伸，增加中间显示空间
  */
 
 // ---------------------------------------------------------------------------
@@ -420,7 +420,7 @@ function smallWidget(ctx, s) {
   };
 }
 
-/* ---------- 中号（已优化上下留白，使四角文字向外扩展） ---------- */
+/* ---------- 中号（调整边距与间距，使底部文字向下延伸） ---------- */
 
 function mediumWidget(ctx, s) {
   const d = s.data;
@@ -435,7 +435,7 @@ function mediumWidget(ctx, s) {
   ];
 
   return {
-    type: 'widget', padding: [10, 14], gap: 10, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
+    type: 'widget', padding: [8, 14], gap: 8, backgroundGradient: bg(), refreshAfter: refreshAt(ctx),
     children: [
       header(s),
       {
