@@ -1,6 +1,6 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.7
- * 优化：微调中号组件上下边距与间距，使底部文字进一步向下延伸，增加中间显示空间
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.8
+ * 修复：修正 vnstat 获取 JSON 的命令参数（去除不支持的 -m 1），让 vnstat 统计正常生效
  */
 
 // ---------------------------------------------------------------------------
@@ -84,7 +84,7 @@ async function collect(ctx, cfg) {
     'df -B1 / | tail -1',
     'nproc',
     "awk '/^ *(eth|en|wlan|ens|eno|bond|veth)/{rx+=$2;tx+=$10}END{print rx,tx}' /proc/net/dev",
-    'vnstat --json -m 1 2>/dev/null || echo ""',
+    'vnstat --json 2>/dev/null || echo ""', // 修复：去掉 -m 1，以正确输出 JSON
   ];
   const { stdout } = await session.exec(cmds.join(` && echo '${SEP}' && `));
   await session.close();
@@ -420,7 +420,7 @@ function smallWidget(ctx, s) {
   };
 }
 
-/* ---------- 中号（调整边距与间距，使底部文字向下延伸） ---------- */
+/* ---------- 中号 ---------- */
 
 function mediumWidget(ctx, s) {
   const d = s.data;
@@ -588,7 +588,7 @@ function emptyWidget(ctx, message, sub) {
 
 // ---------------------------------------------------------------------------
 
-export default async function (ctx) {
+export default async function (ctx, env) {
   const cfg = readConfig(ctx);
   const family = ctx.widgetFamily || 'systemMedium';
   if (!cfg.host) return emptyWidget(ctx, '等待服务器配置', '在 Env 里填 SERVER_HOST，以及 SERVER_PASSWORD 或 SERVER_KEY');
