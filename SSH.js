@@ -1,6 +1,21 @@
 /**
- * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.8
- * 修复：修正 vnstat 获取 JSON 的命令参数（去除不支持的 -m 1），让 vnstat 统计正常生效
+ * ===========================================================================
+ * vnStat 快速安装与配置指南 (适用于 Debian/Ubuntu)
+ * ===========================================================================
+ * 1. 安装 vnStat：
+ *    apt update && apt install vnstat -y
+ *
+ * 2. 设置开机自启并启动服务：
+ *    systemctl enable --now vnstat
+ *
+ * 3. 修改每月流量重置日期（例如改为每月 11 号重置）：
+ *    (1) 编辑配置文件：nano /etc/vnstat.conf
+ *    (2) 找到 MonthResetDay 修改为对应数字（如 MonthResetDay 11），保存退出
+ *    (3) 重启服务生效：systemctl restart vnstat
+ * ===========================================================================
+ * 
+ * Egern 小组件：VPS 服务器监控 · Hark 液态玻璃 Apple 健身圆环版 v3.9
+ * 优化：集成 vnstat 指南注释，修正 vnstat 2.x 的 JSON 采集参数
  */
 
 // ---------------------------------------------------------------------------
@@ -84,7 +99,7 @@ async function collect(ctx, cfg) {
     'df -B1 / | tail -1',
     'nproc',
     "awk '/^ *(eth|en|wlan|ens|eno|bond|veth)/{rx+=$2;tx+=$10}END{print rx,tx}' /proc/net/dev",
-    'vnstat --json 2>/dev/null || echo ""', // 修复：去掉 -m 1，以正确输出 JSON
+    'vnstat --json 2>/dev/null || echo ""',
   ];
   const { stdout } = await session.exec(cmds.join(` && echo '${SEP}' && `));
   await session.close();
@@ -588,10 +603,10 @@ function emptyWidget(ctx, message, sub) {
 
 // ---------------------------------------------------------------------------
 
-export default async function (ctx, env) {
+export default async function (ctx) {
   const cfg = readConfig(ctx);
   const family = ctx.widgetFamily || 'systemMedium';
-  if (!cfg.host) return emptyWidget(ctx, '等待服务器配置', '在 Env 里填 SERVER_HOST，以及 SERVER_PASSWORD 或 SERVER_KEY');
+  if (!cfg.host) return emptyWidget(ctx, '等待服务器配置', '在 Env 里填 SERVER_HOST，以及 SERVER_PASSWORD || SERVER_KEY');
   const s = await loadServer(ctx, cfg);
   if (family.startsWith('accessory')) return lockWidget(ctx, s, family);
   if (!s.data) return emptyWidget(ctx, '无法连接服务器', s.error || '请检查网络与 SSH 配置');
