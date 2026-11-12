@@ -143,20 +143,77 @@ function parseMetrics(ctx, cfg, p, key) {
   const nn = (p[7] || '0 0').split(' ');
   const netRx = Number(nn[0]) || 0, netTx = Number(nn[1]) || 0;
 
-  // 流量统计
+  // 流量统计（修正 vnStat 2.x 的月度/动态周期数据提取）
   let tfRx = 0, tfTx = 0, tfSource = '月差值';
   if (p[8]) {
     try {
       const vn = JSON.parse(p[8]);
-      const monthArr = vn.interfaces?.[0]?.traffic?.month;
-      if (monthArr && monthArr[0]) {
-        tfRx = Number(monthArr[0].rx) || 0;
-        tfTx = Number(monthArr[0].tx) || 0;
-        tfSource = 'vnstat';
+      const interfaceData = vn.interfaces?.[0];
+      const monthArr = interfaceData?.traffic?.month;
+      
+      if (monthArr && monthArr.length > 0) {
+        // vnStat 2.x 的 month 数组中，最后一项通常是当前正在统计的月份（或者当前周期）
+        // 如果你的重置日是 11 号，vnStat 自带的 month 可能按自然月算。
+        // 为了精准对应你的自定义重置日，我们可以尝试从 "days" 数组中按日期过滤并累加当前计费周期的流量！
+        const dayArr = interfaceData?.traffic?.day;
+        if (dayArr && dayArr.length > 0) {
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          const currentMonth = now.getMonth() + 1; // 1-12
+          const resetDay = cfg.resetDay || 1;
+
+          // 计算当前计费周期的起始时间对象
+          let startCycleDate;
+          if (now.getDate() >= resetDay) {
+            startCycleDate = new Date(currentYear, currentMonth - 1, resetDay);
+          } else {
+            // 如果还没到本月的重置日，说明周期是从上个月的重置日开始的
+            let prevMonth = currentMonth - 1;
+            let prevYear = currentYear;
+            if (prevMonth < 1) { prevMonth = 12; prevYear -= 1; }
+            startCycleDate = new Date(prevYear, prevMonth - 1, resetDay);
+          }
+
+          let cycleRx = 0;
+          let cycleTx = 0;
+          let matchedDaysCount = 0;
+
+          // 遍历 vnStat 的 day 数组，把属于当前计费周期的每一天流量累加起来！
+          for (let i = 0; i < dayArr.length; i++) {
+            const dItem = dayArr[i];
+            const dDate = new Date(dItem.date.year, dItem.date.month - 1, dItem.date.day);
+            if (dDate >= startCycleDate && dDate <= now) {
+              cycleRx += Number(dItem.rx) || 0;
+              cycleTx += Number(dItem.tx) || 0;
+              matchedDaysCount++;
+            }
+          }
+
+          if (matchedDaysCount > 0) {
+            tfRx = cycleRx;
+            tfTx = cycleTx;
+            tfSource = 'vnstat(cycle)';
+          } else {
+            // 兜底：如果没匹配到，取vnstat默认当月数据
+            const currentMonthItem = monthArr[monthArr.length - 1];
+            tfRx = Number(currentMonthItem.rx) || 0;
+            tfTx = Number(currentMonthItem.tx) || 0;
+            tfSource = 'vnstat(month)';
+          }
+        } else {
+          const currentMonthItem = monthArr[monthArr.length - 1];
+          tfRx = Number(currentMonthItem.rx) || 0;
+          tfTx = Number(currentMonthItem.tx) || 0;
+          tfSource = 'vnstat(month)';
+        }
       }
-    } catch {}
+    } catch (e) {
+      console.log('vnstat parse error:', e);
+    }
   }
-  if (tfSource !== 'vnstat') {
+
+  // 如果 vnStat 解析失败，则回退到原有的“月差值”本地计算逻辑
+  if (tfSource === '月差值') {
     const baseKey = `${key}.netbase`;
     let base = null;
     try { base = ctx.storage?.getJSON(baseKey); } catch {}
@@ -385,7 +442,7 @@ function footer(ctx, s, extra) {
       icon('arrow.triangle.2.circlepath', C.dim, 9),
       T(parts.join(' · '), 9, C.dim),
       { type: 'spacer' },
-      ...(s.data ? [T(`${s.data.tfSource === 'vnstat' ? 'vnstat' : '月差值'}统计`, 9, C.dim)] : []),
+      ...(s.data ? [T(`${s.data.tfSource}`, 9, C.dim)] : []),
     ],
   };
 }
